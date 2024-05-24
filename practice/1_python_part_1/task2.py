@@ -10,11 +10,12 @@ Examples:
     {'a': 5}
 """
 from typing import Dict
+import sys
 
 
 def set_to_dict(dict_to_update: Dict[str, int], **items_to_set) -> Dict:
     for a,b in items_to_set.items():
-        if a not in dict_to_update or b > dict_to_update.get(a,0):
+        if a not in dict_to_update or b > dict_to_update.get(a):
             dict_to_update[a] = b
 
     return dict_to_update

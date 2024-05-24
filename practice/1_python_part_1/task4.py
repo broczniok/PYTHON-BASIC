@@ -14,10 +14,8 @@ def calculate_power_with_difference(ints: List[int]) -> List[int]:
     for i in range(0,len(ints)):
         if(i == 0):
             result_list.append(ints[i]**ints[i+1])
-            print(ints[i]**ints[i+1])
         else:
             result_list.append(ints[i]**2-(ints[i-1]**2 - ints[i-1]))
-            print(ints[i]**2-(ints[i-1]**2 - ints[i-1]))
     
     return result_list
 
