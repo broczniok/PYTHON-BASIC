@@ -27,7 +27,6 @@ def math_calculate(function: str, *args):
     else:
         raise TypeError()
     
-    
 
 
 """

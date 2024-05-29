@@ -40,15 +40,6 @@ def calculate_days(from_date: str) -> int:
         raise WrongFormatException()
 
 
-
-
-#calculate_days('2024-05-26')
-
-#calculate_days('2024-09-26')
-
-#calculate_days('26-05-2024')
-
-
 """
 Write tests for calculate_days function
 Note that all tests should pass regardless of the day test was run
