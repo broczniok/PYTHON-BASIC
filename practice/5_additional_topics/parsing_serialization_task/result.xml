@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<weather country="Spain" date="2021-09-25">
+  <summary>
+    <summary mean_temp="18.84027777777778" mean_wind_speed="1.5416666666666667" coldest_place="Valladolid" warmest_place="Palma"/>
+  </summary>
+  <cities>
+    <city name="source_data" mean_temp="0.0" mean_wind_speed="0.0" min_temp="9223372036854775807" min_wind_speed="9223372036854775807" max_temp="-9223372036854775808" max_wind_speed="-9223372036854775808"/>
+    <city name="Oviedo" mean_temp="16.458333333333332" mean_wind_speed="1.0" min_temp="14" min_wind_speed="0" max_temp="21" max_wind_speed="6"/>
+    <city name="Barcelona" mean_temp="23.625" mean_wind_speed="0.8333333333333334" min_temp="21" min_wind_speed="0" max_temp="27" max_wind_speed="3"/>
+    <city name="Valencia" mean_temp="22.958333333333332" mean_wind_speed="0.9583333333333334" min_temp="20" min_wind_speed="0" max_temp="27" max_wind_speed="4"/>
+    <city name="Toledo" mean_temp="19.125" mean_wind_speed="3.2916666666666665" min_temp="16" min_wind_speed="1" max_temp="23" max_wind_speed="7"/>
+    <city name="Valladolid" mean_temp="15.125" mean_wind_speed="1.7083333333333333" min_temp="12" min_wind_speed="0" max_temp="19" max_wind_speed="8"/>
+    <city name="Seville" mean_temp="21.083333333333332" mean_wind_speed="0.4583333333333333" min_temp="17" min_wind_speed="0" max_temp="27" max_wind_speed="2"/>
+    <city name="Pamplona" mean_temp="20.0" mean_wind_speed="3.6666666666666665" min_temp="16" min_wind_speed="0" max_temp="25" max_wind_speed="9"/>
+    <city name="Santiago de Compostela" mean_temp="15.625" mean_wind_speed="1.3333333333333333" min_temp="13" min_wind_speed="0" max_temp="19" max_wind_speed="4"/>
+    <city name="Madrid" mean_temp="17.333333333333332" mean_wind_speed="2.125" min_temp="14" min_wind_speed="0" max_temp="21" max_wind_speed="4"/>
+    <city name="Merida" mean_temp="19.125" mean_wind_speed="2.4583333333333335" min_temp="15" min_wind_speed="1" max_temp="24" max_wind_speed="4"/>
+    <city name="Zaragoza" mean_temp="20.708333333333332" mean_wind_speed="1.375" min_temp="16" min_wind_speed="0" max_temp="26" max_wind_speed="4"/>
+    <city name="Santa Cruz de Tenerife" mean_temp="21.75" mean_wind_speed="1.4166666666666667" min_temp="19" min_wind_speed="0" max_temp="25" max_wind_speed="4"/>
+    <city name="Santander" mean_temp="19.25" mean_wind_speed="1.5833333333333333" min_temp="16" min_wind_speed="0" max_temp="23" max_wind_speed="4"/>
+    <city name="Palma" mean_temp="25.708333333333332" mean_wind_speed="1.0833333333333333" min_temp="22" min_wind_speed="0" max_temp="30" max_wind_speed="6"/>
+    <city name="Murcia" mean_temp="25.208333333333332" mean_wind_speed="0.6666666666666666" min_temp="22" min_wind_speed="0" max_temp="30" max_wind_speed="4"/>
+    <city name="Logrono" mean_temp="18.75" mean_wind_speed="2.2916666666666665" min_temp="16" min_wind_speed="1" max_temp="23" max_wind_speed="7"/>
+    <city name="Vitoria-Gasteiz" mean_temp="17.291666666666668" mean_wind_speed="1.5" min_temp="14" min_wind_speed="0" max_temp="22" max_wind_speed="7"/>
+  </cities>
+</weather>
