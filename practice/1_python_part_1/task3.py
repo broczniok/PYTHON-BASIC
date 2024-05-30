@@ -17,12 +17,11 @@ from typing import Iterable
 
 def build_from_unique_words(*lines: Iterable[str], word_number: int) -> str:
 
-    words = ''
+    words = []
     for line in lines:
 
         line_words = sorted(list(set(line.split())))
         if word_number < len(line_words):
-            words+=line_words[word_number] + " "
+            words.append(line_words[word_number])
 
-    return words
-
+    return " ".join(words)
