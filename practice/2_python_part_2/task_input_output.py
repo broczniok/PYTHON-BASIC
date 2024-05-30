@@ -21,14 +21,12 @@ def read_numbers(n: int) -> str:
     arguments = sys.argv[1:]
     numbers = []
     sum = 0
-    for number in arguments:
-        if(number.isdigit()):
-            numbers.append(int(number))
-    if(n > len(numbers)):
-        n = len(numbers)
+    for i in range(n):
+        if(arguments[i].isdigit()):
+            numbers.append(int(arguments[i]))
     if(len(numbers) > 0):
-        for i in range(0,n):
-            sum += numbers[i]
+        for y in range(len(numbers)):
+            sum += numbers[y]
         print('Avg:', sum/n)
     elif(len(numbers) == 0):
         print("No numbers entered")

@@ -26,21 +26,20 @@ def generate_words(n=20):
 def write_to_file():
     index = 1
     table = generate_words()
-    while(True):
-        if not exists("files/file_" + str(index) + ".txt"):
-            filepath = "files/file_" + str(index) + ".txt"
-            f = open(filepath, "x")
-            for item in table:
-                f.write(item+'\n')
-            for item in list(reversed(table)):
-                f.write(item + ',')
-            f.close()
+    
+    while True:
+        file_path = f"files/file_{index}.txt"
+        if not exists(file_path):
+            with open(file_path, "x", encoding="utf-8") as f:
+                result = '\n'.join(table) + '\n'
+                f.write(result)
+            
+            reverse_file_path = f"files/reversed_file_{index}.txt"
+            with open(reverse_file_path, "x", encoding="cp1252") as f_reversed:
+                reversed_result = ','.join(reversed(table))+','
+                f_reversed.write(reversed_result)
             return
         
         index += 1
 
-
-#print(generate_words())
-#print("reversed:")
-#print(list(reversed(generate_words())))
 write_to_file()
