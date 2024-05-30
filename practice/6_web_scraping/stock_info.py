@@ -36,138 +36,174 @@ Links:
 
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-from tabulate import tabulate
-import os
+import re
 from datetime import datetime
 
-def file_with_path(filename):
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), filename))
+def sheet_creator(title: str, data: dict):
+    # lengths of every column
+    col_lens = []
+    for col in data:
+        if data[col]:  # ensure there are elements in the column
+            col_lens.append(max(max([len(el) for el in data[col]]), len(col)))
+        else:
+            col_lens.append(len(col))
+    # full length of one row
+    full_len = sum(col_lens) + 3 * len(col_lens) + 1
+    top_frame = '=' * int((full_len - len(title) - 2) / 2)
+    # printing title
+    print(top_frame, title, top_frame)
+    # printing header
+    for col in range(len(data.keys())):
+        print('| ' + list(data.keys())[col] + ' ' * (col_lens[col] - len(list(data.keys())[col])), end=' ')
+    print('|\n' + '-' * full_len)
+    # printing rows
+    for i in range(len(data[list(data.keys())[0]])):
+        for j, key in enumerate(data):
+            print('| ' + data[key][i] + ' ' * (col_lens[j] - len(data[key][i])), end=' ')
+        print('|')
 
-def get_response(url):
-    response = requests.get(url, headers={'User-Agent': 'Custom'})
-    if not response.ok:
-        raise Exception(f'Failed to load page: {url}')
-    return response
+def get_max_cols(data: dict, column: str, num: int, title: str):
+    # converting to float
+    converted_list = [float(el.replace(',', '').replace('%', '')) if el != 'N/A' else None for el in data[column]]
+    valid_indices = [i for i, el in enumerate(converted_list) if el is not None]
 
-def get_page(url):
-    response = get_response(url)
-    return BeautifulSoup(response.text, 'html.parser')
+    if len(valid_indices) < num:
+        num = len(valid_indices)
 
-def get_results_number(soup):
-    results = soup.find('span', class_='Mstart(15px) Fw(500) Fz(s)')
-    return int(results.text.split()[2])
+    top_num_indices = sorted(valid_indices, key=lambda i: converted_list[i], reverse=True)[:num]
 
-def get_table_header(soup, table_number=0):
-    table = soup.find_all('table')[table_number]
-    header = table.find_all('th')
-    return [item.text for item in header]
+    # output dictionary
+    table = dict()
+    for key in data:
+        table[key] = []
+        for ind in top_num_indices:
+            table[key].append(data[key][ind])
+    sheet_creator(title, table)
+    return table
 
-def get_table_rows(soup, table_number=0):
-    data = []
-    table = soup.find_all('table')[table_number]
-    table_body = table.find('tbody')
-    rows = table_body.find_all('tr')
-    for row in rows:
-        cols = [ele.text.strip() for ele in row.find_all('td')]
-        data.append([ele for ele in cols if ele])
-    return data
+def name_and_code_filler(data: dict, company: object, subsite: str):
+    # adding names and code to output data
+    data["Name"].append(company.find("td", {"aria-label": "Name"}).text)
+    data["Code"].append(company.find("td", {"aria-label": "Symbol"}).text)
 
-def stock_tab_url(tab, symbol):
-    return f'https://finance.yahoo.com/quote/{symbol}/{tab}?p={symbol}'
+    # creating bs4 object for subsite
+    url_suffix = company.find("a")["href"]
+    if '?' in url_suffix:
+        url_suffix = url_suffix.split('?')[0]
+    profile_url = "https://finance.yahoo.com" + url_suffix + subsite
+    comp_page = requests.get(profile_url)
+    comp_soup = BeautifulSoup(comp_page.content, "html.parser")
+    return comp_soup
 
-def read_profile(data, symbol):
-    url = stock_tab_url('profile', symbol)
-    soup = get_page(url)
-    rows = get_table_rows(soup)
-    ceo = rows[0]
-    ceo = [0 if x == 'N/A' else x for x in ceo]
-    data.loc[symbol, 'CEO Name'] = ceo[0]
-    data.loc[symbol, 'CEO Year Born'] = int(ceo[4])
-    div = soup.find('div', class_='Mb(25px)')
-    info = [child.get_text(strip=True, separator='\n').splitlines() for child in div.find_all("p", recursive=False)]
-    left, right = info
-    data.loc[symbol, 'Country'] = left[-3]
-    data.loc[symbol, 'Employees'] = int(right[-1].replace(',', '')) if right[-1] != ':' else 0
+def first_task(companies):
+    # first sheet
+    # creating dict with data
+    data = dict()
+    data = data.fromkeys(
+        ["Name", "Code", "Country", "Employees", "CEO Name", "CEO Year Born"])
+    for key in data:
+        data[key] = []
+    for company in companies:
+        comp_soup = name_and_code_filler(data, company, "/profile")
+        comp_results_country = comp_soup.find(
+            "p", class_="D(ib) W(47.727%) Pend(40px)")
+        if comp_results_country is None:
+            data["Country"].append('N/A')
+            data["Employees"].append('N/A')
+            data["CEO Name"].append('N/A')
+            data["CEO Year Born"].append('N/A')
+            continue
+        string_list = str(comp_results_country).split("<br/>")
+        country = string_list[len(string_list) - 3]
+        data["Country"].append(country)
 
-def read_statistics(data, symbol):
-    url = stock_tab_url('statistics', symbol)
-    soup = get_page(url)
-    rows = get_table_rows(soup, 1)
+        # employees
+        comp_results_emp = comp_soup.find_all("span", class_="Fw(600)")
+        if len(comp_results_emp) > 2:
+            employees = comp_results_emp[2].text
+        else:
+            employees = 'N/A'
+        data["Employees"].append(employees)
 
-def read_blackrock(data, symbol):
-    url = stock_tab_url('holders', symbol)
-    soup = get_page(url)
-    headers = get_table_header(soup, 1)
-    rows = get_table_rows(soup, 1)
-    blackrock = next((row for row in rows if row[0] == 'Blackrock Inc.'), None)
-    if blackrock:
-        for x in [1, 4]:
-            blackrock[x] = int(blackrock[x].replace(',', ''))
-        blackrock[2] = datetime.strptime(blackrock[2], '%b %d, %Y')
-        blackrock[3] = float(blackrock[3].strip('%')) / 100
-        for field, value in zip(headers[1:], blackrock[1:]):
-            data.loc[symbol, field] = value
+        # ceo
+        executives = comp_soup.find("table", class_="W(100%)")
+        if executives:
+            ceo = executives.find("td", string=re.compile("CEO"))
+            try:
+                ceo_name = [*ceo.parent.children][0].text
+                ceo_year = [*ceo.parent.children][4].text
+            except (AttributeError, IndexError):
+                ceo_name = "N/A"
+                ceo_year = "N/A"
+        else:
+            ceo_name = "N/A"
+            ceo_year = "N/A"
+        data["CEO Name"].append(ceo_name)
+        data["CEO Year Born"].append(ceo_year)
+    print("First task data:", data)  # Debug print
+    get_max_cols(data, "CEO Year Born", 5, "5 stocks with most youngest CEOs")
 
-def read_all_stocks(data, rows):
-    for symbol, row in data.head(40).iterrows():
-        read_profile(data, symbol)
-        read_statistics(data, symbol)
-        read_blackrock(data, symbol)
+def second_task(companies):
+    data = dict()
+    data = data.fromkeys(
+        ["Name", "Code", "52-Week High", "Total Cash"])
+    for key in data:
+        data[key] = []
+    for company in companies:
+        comp_soup = name_and_code_filler(data, company, "/key-statistics")
+        comp_lines = comp_soup.find_all("tr", class_="Bxz(bb) H(36px) BdB Bdbc($seperatorColor)")
+        if len(comp_lines) > 2:
+            week_high = comp_lines[2].text[14:]
+        else:
+            week_high = 'N/A'
+        data["52-Week High"].append(week_high.replace(',', ''))
 
-def pretty_sheet(title, data):
-    pretty_table = tabulate(data.head(), headers='keys', tablefmt='pretty')
-    length = len(pretty_table.splitlines()[0])
-    title_formatted = title.center(length, '=')
-    print(title_formatted)
-    print(pretty_table)
-    return title_formatted, pretty_table
+        # total cash
+        comp_lines2 = comp_soup.find("span", string="Total Cash")
+        if comp_lines2 and comp_lines2.parent and comp_lines2.parent.parent:
+            total_cash = comp_lines2.parent.parent.text[16:]
+        else:
+            total_cash = 'N/A'
+        data["Total Cash"].append(total_cash)
+    print("Second task data:", data)  # Debug print
+    get_max_cols(data, "52-Week High", 10, "10 stocks with best 52-Week Change")
 
-def write_string(file, string_list):
-    with open(file, 'w') as fp:
-        fp.write('\n'.join(string_list))
+def third_task(companies):
+    data = dict()
+    data = data.fromkeys(
+        ["Name", "Code", "Shares", "Date Reported", "% Out", "Value"])
+    for key in data:
+        data[key] = []
 
-def create_sheets(data):
-    pretty_sheet(" all data ", data)
-    title = ' 5 stocks with most youngest CEOs '
-    table = data.nlargest(5, 'CEO Year Born')
-    title, sheet = pretty_sheet(title, table[['Name', 'Country', 'Employees', 'CEO Name', 'CEO Year Born']])
-    write_string(file_with_path('5stocks.txt'), [title, sheet])
-    title = ' 10 largest holds of Blackrock Inc '
-    table = data.nlargest(10, 'Value')
-    title, sheet = pretty_sheet(title, table[['Name', 'Shares', 'Date Reported', '% Out', 'Value']])
-    write_string(file_with_path('blackrock.txt'), [title, sheet])
+    for company in companies:
+        comp_soup = name_and_code_filler(data, company, "/holders")
+        try:
+            comp_data = comp_soup.find("td", string="Blackrock Inc.").parent.children
+        except AttributeError:
+            data["Shares"].append("N/A")
+            data["Date Reported"].append("N/A")
+            data["% Out"].append("N/A")
+            data["Value"].append("N/A")
+            continue
+        comp_list = [*comp_data]
+        data["Shares"].append(comp_list[1].text)
+        data["Date Reported"].append(comp_list[2].text)
+        data["% Out"].append(comp_list[3].text)
+        data["Value"].append(comp_list[4].text.replace(',', ''))
+    print("Third task data:", data)  # Debug print
+    get_max_cols(data, "Value", 10, "10 largest holds of Blackrock Inc.")
 
-def count_url(base_url, count, offset):
-    return f'{base_url}?count={count}&offset={offset}'
+if __name__ == "__main__":
+    # connecting to url
+    url = f"https://finance.yahoo.com/most-active"
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
 
-def scrape_yahoo_most_active(url):
-    data = pd.DataFrame()
-    count = 100
-    offset = 0
-    url_offset = count_url(url, count, offset)
-    soup = get_page(url_offset)
-    res_num = get_results_number(soup)
-    header = get_table_header(soup)
-    rows = []
-    while offset <= res_num:
-        url_offset = count_url(url, count, offset)
-        soup = get_page(url_offset)
-        rows += get_table_rows(soup)
-        offset += count
-    data = pd.DataFrame([row[:2] for row in rows], columns=['Code', 'Name'])
-    data = data.set_index('Code')
-    read_all_stocks(data, rows)
-    return data
+    results = soup.find("div", id="scr-res-table")
+    companies = results.find_all("tr", class_="simpTblRow")
+    first_task(companies)
+    print("\n")
+    second_task(companies)
+    print("\n")
+    third_task(companies)
 
-url = 'https://finance.yahoo.com/most-active'
-scraping = True
-filename = file_with_path('output.csv')
-
-if scraping:
-    data = scrape_yahoo_most_active(url)
-    data = data.fillna(0)
-    data.Employees = data.Employees.astype(int)
-    data['CEO Year Born'] = data['CEO Year Born'].astype(int)
-    create_sheets(data)
-    data.head().to_csv(filename, sep='\t', encoding='utf-8', na_rep='NULL')
