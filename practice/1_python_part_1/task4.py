@@ -19,4 +19,3 @@ def calculate_power_with_difference(ints: List[int]) -> List[int]:
     
     return result_list
 
-print(calculate_power_with_difference([1, 2, 3]))
