@@ -103,7 +103,7 @@ def name_and_code_filler(data: dict, company: object, subsite: str):
     # adding names and code to output data
     data["Name"].append(company.find("td", {"aria-label": "Name"}).text)
     data["Code"].append(company.find("td", {"aria-label": "Symbol"}).text)
-
+    
     # creating bs4 object for subsite
     url_suffix = company.find("a")["href"]
     if '?' in url_suffix:
