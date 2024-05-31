@@ -53,8 +53,5 @@ def write_to_file_cp1252(path):
     
 
 
-#print(generate_words())
-#print("reversed:")
-#print(list(reversed(generate_words())))
-#write_to_file_utf("files")
-#write_to_file_cp1252("files")
+write_to_file_utf("files")
+write_to_file_cp1252("files")

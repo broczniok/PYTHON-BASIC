@@ -45,5 +45,3 @@ def write_file(number_table, path):
 
 filepath = "/Users/broczniok/Desktop/PYTHON-BASIC/practice/python_part_2/files/"
 write_file(read_file(filepath), filepath)
-
-#/Users/broczniok/Desktop/PYTHON-BASIC/practice/python_part_2/files
