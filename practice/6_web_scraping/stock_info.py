@@ -32,196 +32,162 @@ Links:
     - lxml docs: https://lxml.de/
 """
 
-# Profile link: https://finance.yahoo.com/quote/AAL/profile/ with AAL name of stock
 
-# To fix this code i need to add HEADER and unzip response
-
-import requests
-from bs4 import BeautifulSoup
-import re
+from typing import Tuple
+import urllib.request
+import ssl
 import gzip
-from datetime import datetime
+from io import BytesIO
+from bs4 import BeautifulSoup
+from pprint import pprint  
+import requests
+from http import cookiejar
+from requests.cookies import cookiejar_from_dict, cookielib
+from requests.structures import CaseInsensitiveDict
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
+ssl._create_default_https_context = ssl._create_stdlib_context
 
 HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Cache-Control": "max-age=0",
-    }
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
+}
+
+class BlockAll(cookiejar.CookiePolicy):
+    return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
+    netscape = True
+    rfc2965 = hide_cookie2 = False
 
 
-def sheet_creator(title: str, data: dict):
-    # lengths of every column
-    col_lens = []
-    for col in data:
-        if data[col]:  # ensure there are elements in the column
-            col_lens.append(max(max([len(el) for el in data[col]]), len(col)))
-        else:
-            col_lens.append(len(col))
-    # full length of one row
-    full_len = sum(col_lens) + 3 * len(col_lens) + 1
-    top_frame = '=' * int((full_len - len(title) - 2) / 2)
-    # printing title
-    print(top_frame, title, top_frame)
-    # printing header
-    for col in range(len(data.keys())):
-        print('| ' + list(data.keys())[col] + ' ' * (col_lens[col] - len(list(data.keys())[col])), end=' ')
-    print('|\n' + '-' * full_len)
-    # printing rows
-    for i in range(len(data[list(data.keys())[0]])):
-        for j, key in enumerate(data):
-            print('| ' + data[key][i] + ' ' * (col_lens[j] - len(data[key][i])), end=' ')
-        print('|')
-
-def get_max_cols(data: dict, column: str, num: int, title: str):
-    # converting to float
-    converted_list = [float(el.replace(',', '').replace('%', '')) if el != 'N/A' else None for el in data[column]]
-    valid_indices = [i for i, el in enumerate(converted_list) if el is not None]
-
-    if len(valid_indices) < num:
-        num = len(valid_indices)
-
-    top_num_indices = sorted(valid_indices, key=lambda i: converted_list[i], reverse=True)[:num]
-
-    # output dictionary
-    table = dict()
-    for key in data:
-        table[key] = []
-        for ind in top_num_indices:
-            table[key].append(data[key][ind])
-    sheet_creator(title, table)
-    return table
-
-def name_and_code_filler(data: dict, company: object, subsite: str):
-    # adding names and code to output data
-    data["Name"].append(company.find("td", {"aria-label": "Name"}).text)
-    data["Code"].append(company.find("td", {"aria-label": "Symbol"}).text)
+def make_request(url: str) -> Tuple[int, str]:
     
-    # creating bs4 object for subsite
-    url_suffix = company.find("a")["href"]
-    if '?' in url_suffix:
-        url_suffix = url_suffix.split('?')[0]
-    profile_url = "https://finance.yahoo.com" + url_suffix + subsite
-    comp_page = requests.get(profile_url, headers=HEADERS)
-    comp_soup = BeautifulSoup(comp_page.content, "html.parser")
-    return comp_soup
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument(f"user-agent={HEADERS['User-Agent']}")
+    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+    driver.get(url)
+    try:
+        accept_button = driver.find_element(By.CSS_SELECTOR, "button[name='agree']")
+        accept_button.click()
+        driver.implicitly_wait(5)  
+        body = driver.page_source
+        s = requests.Session()
+        s.cookies.set_policy(BlockAll())
+        req = s.get(url, headers=HEADERS)
+        status_code = req.status_code
+        return (status_code, body)
+    except Exception as e:
+        print(e)
+        return (0, str(e))
+    finally:
+        driver.quit()
 
-def first_task(companies):
-    # first sheet
-    # creating dict with data
-    data = dict()
-    data = data.fromkeys(
-        ["Name", "Code", "Country", "Employees", "CEO Name", "CEO Year Born"])
-    for key in data:
-        data[key] = []
-    for company in companies:
-        comp_soup = name_and_code_filler(data, company, "/profile")
-        comp_results_country = comp_soup.find(
-            "p", class_="D(ib) W(47.727%) Pend(40px)")
-        if comp_results_country is None:
-            data["Country"].append('N/A')
-            data["Employees"].append('N/A')
-            data["CEO Name"].append('N/A')
-            data["CEO Year Born"].append('N/A')
-            continue
-        string_list = str(comp_results_country).split("<br/>")
-        country = string_list[len(string_list) - 3]
-        data["Country"].append(country)
+def get_soup(url) -> BeautifulSoup:
+    return BeautifulSoup(make_request(url)[1], 'html.parser')
 
-        # employees
-        comp_results_emp = comp_soup.find_all("span", class_="Fw(600)")
-        if len(comp_results_emp) > 2:
-            employees = comp_results_emp[2].text
-        else:
-            employees = 'N/A'
-        data["Employees"].append(employees)
+def get_codes():
+    url_name_code = "https://finance.yahoo.com/most-active"
+    soup = get_soup(url_name_code)
+    codes= {"Code": [], "Name": []}
+    
+    code_tds = soup.find_all("td", {"aria-label": "Symbol"})
+    for td in code_tds:
+        codes["Code"].append(td.text.strip())
+    name_tds = soup.find_all("td", {"aria-label": "Name"})
+    for td in name_tds:
+        codes["Name"].append(td.text.strip())
+    return codes
 
-        # ceo
-        executives = comp_soup.find("table", class_="W(100%)")
-        if executives:
-            ceo = executives.find("td", string=re.compile("CEO"))
-            try:
-                ceo_name = [*ceo.parent.children][0].text
-                ceo_year = [*ceo.parent.children][4].text
-            except (AttributeError, IndexError):
-                ceo_name = "N/A"
-                ceo_year = "N/A"
-        else:
-            ceo_name = "N/A"
-            ceo_year = "N/A"
-        data["CEO Name"].append(ceo_name)
-        data["CEO Year Born"].append(ceo_year)
-    print("First task data:", data)  # Debug print
-    get_max_cols(data, "CEO Year Born", 5, "5 stocks with most youngest CEOs")
 
-def second_task(companies):
-    data = dict()
-    data = data.fromkeys(
-        ["Name", "Code", "52-Week High", "Total Cash"])
-    for key in data:
-        data[key] = []
-    for company in companies:
-        comp_soup = name_and_code_filler(data, company, "/key-statistics")
-        comp_lines = comp_soup.find_all("tr", class_="Bxz(bb) H(36px) BdB Bdbc($seperatorColor)")
-        if len(comp_lines) > 2:
-            week_high = comp_lines[2].text[14:]
-        else:
-            week_high = 'N/A'
-        data["52-Week High"].append(week_high.replace(',', ''))
+def get_filtered_data_soup(company: str, code: str):
+    url_profile = "https://finance.yahoo.com/quote/"+str(company)+"/profile/"
 
-        # total cash
-        comp_lines2 = comp_soup.find("span", string="Total Cash")
-        if comp_lines2 and comp_lines2.parent and comp_lines2.parent.parent:
-            total_cash = comp_lines2.parent.parent.text[16:]
-        else:
-            total_cash = 'N/A'
-        data["Total Cash"].append(total_cash)
-    print("Second task data:", data)  # Debug print
-    get_max_cols(data, "52-Week High", 10, "10 stocks with best 52-Week Change")
+    
+    data = {"Name": [], "Code": [], "Country": [], "Employees": [], "CEO": [], "CEO Year Born": []}
+    data["Code"].append(code)
+    data["Name"].append(company)
 
-def third_task(companies):
-    data = dict()
-    data = data.fromkeys(
-        ["Name", "Code", "Shares", "Date Reported", "% Out", "Value"])
-    for key in data:
-        data[key] = []
+    soup = get_soup(url_profile)
+    country_divs = soup.find_all("div", {"class": "address svelte-wxp4ja"})
+    if country_divs:
+        last_country_div = country_divs[-1]
+        data["Country"].append(last_country_div.text.strip())
+    dds = soup.find_all("dd") 
+    for dd in dds:
+        strong_tag = dd.find("strong")
+        if strong_tag:
+            data["Employees"].append(strong_tag.text)
+    
+    tables = soup.find_all("table", {"class": "svelte-mj92za"}) 
+    for table in tables:
+        tds = table.find_all("td")
+        for i, td in enumerate(tds):
+            if i % 5 == 0:
+                data["CEO"].append(td.text)
+            elif (i - 4) % 5 == 0:
+                data["CEO Year Born"].append(td.text) 
+    
+    return data
 
-    for company in companies:
-        comp_soup = name_and_code_filler(data, company, "/holders")
-        try:
-            comp_data = comp_soup.find("td", string="Blackrock Inc.").parent.children
-        except AttributeError:
-            data["Shares"].append("N/A")
-            data["Date Reported"].append("N/A")
-            data["% Out"].append("N/A")
-            data["Value"].append("N/A")
-            continue
-        comp_list = [*comp_data]
-        data["Shares"].append(comp_list[1].text)
-        data["Date Reported"].append(comp_list[2].text)
-        data["% Out"].append(comp_list[3].text)
-        data["Value"].append(comp_list[4].text.replace(',', ''))
-    print("Third task data:", data)  # Debug print
-    get_max_cols(data, "Value", 10, "10 largest holds of Blackrock Inc.")
 
-if __name__ == "__main__":
-    # connecting to url
-    url = f"https://finance.yahoo.com/most-active"
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, "html.parser")
 
-    results = soup.find("div", id="scr-res-table")
-    companies = results.find_all("tr", class_="simpTblRow")
-    first_task(companies)
-    print("\n")
-    second_task(companies)
-    print("\n")
-    third_task(companies)
+'''
+1. 5 stocks with most youngest CEOs and print sheet to output. You can find CEO info in Profile tab of concrete stock.
+    Sheet's fields: Name, Code, Country, Employees, CEO Name, CEO Year Born.
+
+'''
+def first_task():
+    youngest = []
+    codes = get_codes()["Code"]
+    names = get_codes()["Name"]
+    for i in range(0, len(codes)): 
+        data = get_filtered_data_soup(codes[i], names[i]) 
+        current_name = names[i] 
+        current_code = codes[i] 
+        current_country = data["Country"]
+        current_employees = data["Employees"]
+        current_CEO_name = data["CEO"]
+        current_CEO_year_born = data["CEO Year Born"]
+        current_youngest_index = 0
+        current_youngest_CEO = 0
+
+        for y in range(1, len(current_CEO_name)):
+            if current_CEO_year_born[y] != '-- ' and int(current_CEO_year_born[y]) >  current_youngest_CEO:
+                current_youngest_index = y
+                current_youngest_CEO = int(current_CEO_year_born[y])
+        
+        youngest.append([current_youngest_CEO, current_CEO_name[current_youngest_index], current_name, current_code, current_country, current_employees])
+
+    result_pretty_table = "==================================== 5 stocks with most youngest CEOs ===================================\n"
+    result_pretty_table += "| Name        | Code | Country       | Employees | CEO Name                             | CEO Year Born |\n"
+    result_pretty_table += "===========================================================================================================\n"
+    youngest.sort(key=lambda x: x[0])
+    for data in reversed(youngest[-5:]):
+        result_pretty_table += f"| {data[2]} | {data[3]} | {str(data[4])} | {data[5]} | {data[1]} | {data[0]} |\n"
+
+    print(result_pretty_table)
+
+first_task()
+
+
+
+
+
 
