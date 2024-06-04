@@ -147,6 +147,26 @@ def get_filtered_data_soup(company: str, code: str):
     return data
 
 
+def get_total_cash_52_range(company: str, code: str):
+    url_statistic = "https://finance.yahoo.com/quote/"+str(company)+"/key-statistics/"
+    
+    data = {"Name": [], "Code": [], "Total Cash": [], "52-week Change": []}
+    data["Code"].append(code)
+    data["Name"].append(company)
+
+    soup = get_soup(url_statistic)
+    total_cash_tds = soup.find_all("td", {"class": "value svelte-vaowmx"})
+    if total_cash_tds:
+        total_cash_td = total_cash_tds[14]
+        data["Total Cash"].append(total_cash_td.text.strip())
+
+    week_range_sups = soup.find_all("sup")
+    if week_range_sups:
+        week_range_sup = week_range_sups[1]
+        data["52-week Change"].append(week_range_sup.text.strip())
+    
+    return data
+
 
 '''
 1. 5 stocks with most youngest CEOs and print sheet to output. You can find CEO info in Profile tab of concrete stock.
@@ -184,10 +204,41 @@ def first_task():
 
     print(result_pretty_table)
 
-first_task()
+#first_task()
 
+'''
+2. 10 stocks with best 52-Week Change. 52-Week Change placed on Statistics tab.
+    Sheet's fields: Name, Code, 52-Week Change, Total Cash
+'''
 
+def second_task():
+    best_52 = []
+    codes = get_codes()["Code"]
+    names = get_codes()["Name"]
+    best_52_week_change = 0
+    for i in range(0, len(codes)): 
+        data = get_total_cash_52_range(codes[i], names[i]) 
+        current_name = names[i] 
+        current_code = codes[i] 
+        current_total_cash = data["Total Cash"]
+        current_52_week_change = float(data["52-week Change"][0])
+       
 
+        if float(current_52_week_change) >  best_52_week_change:
+            best_52_week_change = current_52_week_change
+        
+        best_52.append([current_name, current_code, current_52_week_change, current_total_cash])
+
+    result_pretty_table = "==================================== 5 stocks with most youngest CEOs ===================================\n"
+    result_pretty_table += "| Name        | Code | 52-week Change       | Total Cash |\n"
+    result_pretty_table += "===========================================================================================================\n"
+    best_52.sort(key=lambda x: x[2])
+    for data in reversed(best_52[-10:]):
+        result_pretty_table += f"| {data[0]} | {data[1]} | {str(data[2])} | {str(data[3])}|\n"
+
+    print(result_pretty_table)
+
+#second_task()
 
 
 
