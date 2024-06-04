@@ -15,19 +15,21 @@ from unittest.mock import patch
 import pytest
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../python_part_2')))
-import task_input_output
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '2_python_part_2'))
+
+import importlib
+res = importlib.import_module('task_input_output')
 
 
 def test_read_numbers_without_text_input(capfd):
-    with patch.object(sys, 'argv', ['task_input_output.py', '1', '2', '3', '4']):
-            task_input_output.read_numbers(5)
+    with patch.object(sys, 'argv', ['task_input_output.py', '1', '2', '3', '4', '1']):
+            res.read_numbers(5)
             out,err = capfd.readouterr()
-            assert out == 'Avg: 2.5\n'
+            assert out == 'Avg: 2.2\n'
 
 
 def test_read_numbers_with_text_input(capfd):
-    with patch.object(sys, 'argv', ['task_input_output.py', 'fasfas', 'sda', 'Text']):
-            task_input_output.read_numbers(5)
+    with patch.object(sys, 'argv', ['task_input_output.py', 'fasfas', 'sda', 'Text', 'asdad', 'dass']):
+            res.read_numbers(5)
             out,err = capfd.readouterr()
             assert out == 'No numbers entered\n'

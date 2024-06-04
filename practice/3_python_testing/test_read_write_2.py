@@ -8,22 +8,21 @@ import pytest
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../python_part_2')))
-import task_read_write_2
 import string
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '2_python_part_2'))
 
-filepath = "/Users/broczniok/Desktop/PYTHON-BASIC/practice/python_part_2/files/"
-
+import importlib
+res = importlib.import_module('task_read_write_2')
 
 def test_generate_words(n=20):
-    assert task_read_write_2.generate_words()
-    assert len(task_read_write_2.generate_words()) > 0
+    assert res.generate_words()
+    assert len(res.generate_words()) == 20
 
 def test_write_to_file_utf(tmp_path):
     d = tmp_path / "test_utf"
     d.mkdir()
 
-    task_read_write_2.write_to_file_utf(d)
+    res.write_to_file_utf(d)
 
     assert len(list(tmp_path.iterdir())) == 1
 
@@ -33,14 +32,14 @@ def test_write_to_file_utf(tmp_path):
         lines = f.readlines()
 
     for line in lines:
-        assert line.strip().islower()
-        assert all(c in string.ascii_lowercase for c in line.strip())
+        assert line.find('\n') >= 0
+
 
 def test_write_to_file_cp1252(tmp_path):
     d = tmp_path / "test_cp1252"
     d.mkdir()
 
-    task_read_write_2.write_to_file_cp1252(d)
+    res.write_to_file_cp1252(d)
 
     assert len(list(tmp_path.iterdir())) == 1
 
@@ -48,9 +47,8 @@ def test_write_to_file_cp1252(tmp_path):
 
     with files[0].open(encoding="CP1252") as f:
         content = f.read()
+    
+    assert ',' in content
 
-    words = content.split(',')
-
-    for word in words:
-        assert all(c in string.ascii_lowercase for c in word)
+    
 

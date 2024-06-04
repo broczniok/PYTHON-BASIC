@@ -7,28 +7,30 @@ import pytest
 import os
 import sys
 from datetime import datetime, timedelta
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../python_part_2')))
-from task_classes import Teacher, Student, Homework
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '2_python_part_2'))
+
+import importlib
+res = importlib.import_module('task_classes')
 
 @pytest.fixture
 def teacher():
-    return Teacher('Dmitry', 'Orlyakov')
+    return res.Teacher('Dmitry', 'Orlyakov')
 
 @pytest.fixture
 def student():
-    return Student('Vladislav', 'Popov')
+    return res.Student('Vladislav', 'Popov')
 
 @pytest.fixture
 def homework1():
-    return Homework('Learn functions', 0)
+    return res.Homework('Learn functions', 0)
 
 @pytest.fixture
 def homework2():
-    return Homework('create 2 simple classes', 5)
+    return res.Homework('create 2 simple classes', 5)
 
 @pytest.fixture
 def homework3():
-    return Homework('create 2 simple classes', -5)
+    return res.Homework('create 2 simple classes', -5)
 
 
 def test_creating_teacher(teacher):
@@ -51,7 +53,7 @@ def test_creating_homework2(homework2):
 
 def test_creating_homework3():
     with pytest.raises(ValueError, match="Days cannot be negative"):
-        Homework('Invalid homework', -1)
+        res.Homework('Invalid homework', -1)
     
 
 def test_create_homework(teacher):
