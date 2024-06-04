@@ -174,21 +174,19 @@ def get_blackrock(company: str, code: str):
     data["Code"].append(code)
     data["Name"].append(company)
     soup = get_soup(url_holders)
-    print(url_holders)
     table_trs = soup.find_all("tr", {"class": "svelte-1s2g2l0"})
+    
     for tr in table_trs:
-        #print(tr)
         tds = tr.find_all("td")
-        for i in range(0, 5):
-            #print(td)
-            print(tds[i].text)
-            if tds[i].text == ' Blackrock Inc.':
-                    data["Shares"].append(tds[1].text)
-                    data["Date Reported"].append(tds[2].text)
-                    data["% Out"].append(tds[3].text)
-                    data["Value"].append(tds[4].text) 
+        if len(tds) >= 5 and tds[0].text.strip().lower() == 'blackrock inc.':
+            data["Shares"].append(tds[1].text.strip())
+            data["Date Reported"].append(tds[2].text.strip())
+            data["% Out"].append(tds[3].text.strip())
+            data["Value"].append(tds[4].text.strip())
     
     return data
+    
+    
 
 
 '''
