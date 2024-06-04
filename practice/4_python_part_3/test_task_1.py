@@ -1,22 +1,28 @@
 import pytest
 from datetime import datetime
-import task_1
 from task_1 import WrongFormatException
+from freezegun import freeze_time
+import task_1
 
-current_date = datetime(2024, 5, 27)
 
-@pytest.mark.parametrize("test_input, expected", [
-    ('2024-05-26', (current_date - datetime(2024, 5, 26)).days), 
-    ('2024-05-28', (current_date - datetime(2024, 5, 28)).days),
-    ('2024-05-27', 0)
-])
-def test_calculate_days(test_input, expected, mocker):
-    mocker.patch('task_1.datetime')
-    task_1.datetime.today.return_value = current_date
-    task_1.datetime.strptime.side_effect = lambda *args, **kwargs: datetime.strptime(*args, **kwargs)
-    assert task_1.calculate_days(test_input) == expected
+@pytest.mark.freeze_time
+def test_calculate_days_2():
+    with freeze_time('2024-05-26'):
+        current_date = '2024-05-26'
+        assert task_1.calculate_days(current_date) == 0
+
+    with freeze_time('2024-05-27'):
+        current_date_plus_1 = '2024-05-26'
+        assert task_1.calculate_days(current_date_plus_1) == 1
+
+    with freeze_time('2024-05-25'):
+        current_date_minus_1 = '2024-05-26'
+        assert task_1.calculate_days(current_date_minus_1) == -1
+
+
 
 def test_calculate_days_exceptions():
     with pytest.raises(WrongFormatException):
         task_1.calculate_days('26-05-2024')
+        assert task_1.calculate_days('26-05-2024') == None
 

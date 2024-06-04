@@ -21,18 +21,8 @@ def calculate_days(from_date: str) -> int:
         current_date = datetime.today()
         date_format = '%Y-%m-%d'
         given_date = datetime.strptime(from_date, date_format)
-
-        if current_date > given_date:
-            t = (current_date - given_date).days
-            print(t)
-            return t
-        elif current_date < given_date:
-            t = -(given_date - current_date).days
-            print(t)
-            return t
-        elif current_date == given_date:
-            print(0)
-            return 0
+        t = (current_date - given_date).days 
+        return t
 
     except ValueError:
         raise WrongFormatException()

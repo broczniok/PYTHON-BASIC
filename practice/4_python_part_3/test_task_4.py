@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
-from task_4 import print_name_address
+from task_4 import print_name_address, get_parser
+from argparse import Namespace
 
 class TestPrintNameAddress(unittest.TestCase):
     @patch('task_4.Faker')
@@ -21,6 +22,7 @@ class TestPrintNameAddress(unittest.TestCase):
         
         fake_instance.name.assert_called_with()
         fake_instance.address.assert_called_with()
+
 
 if __name__ == '__main__':
     unittest.main()

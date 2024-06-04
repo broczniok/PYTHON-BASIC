@@ -13,10 +13,8 @@ import re
 
 
 def is_http_domain(domain: str) -> bool:
-    pattern = r'^http(s)?:\/\/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$'
-    pattern_with_slash = r'^http(s)?:\/\/(?:www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+\/$'
-    return bool(re.match(pattern, domain)) or bool(re.match(pattern_with_slash, domain))
-
+    new_pattern = r"(^http[s]?:/{2}.*[/]?)"
+    return bool(re.match(new_pattern, domain))
 
 """
 write tests for is_http_domain function
