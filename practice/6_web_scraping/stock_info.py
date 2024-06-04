@@ -168,6 +168,29 @@ def get_total_cash_52_range(company: str, code: str):
     return data
 
 
+def get_blackrock(company: str, code: str):
+    url_holders = "https://finance.yahoo.com/quote/"+str(code)+"/holders/"
+    data = {"Name": [], "Code": [], "Shares": [], "Date Reported": [], "% Out": [], "Value":[]}
+    data["Code"].append(code)
+    data["Name"].append(company)
+    soup = get_soup(url_holders)
+    print(url_holders)
+    table_trs = soup.find_all("tr", {"class": "svelte-1s2g2l0"})
+    for tr in table_trs:
+        #print(tr)
+        tds = tr.find_all("td")
+        for i in range(0, 5):
+            #print(td)
+            print(tds[i].text)
+            if tds[i].text == ' Blackrock Inc.':
+                    data["Shares"].append(tds[1].text)
+                    data["Date Reported"].append(tds[2].text)
+                    data["% Out"].append(tds[3].text)
+                    data["Value"].append(tds[4].text) 
+    
+    return data
+
+
 '''
 1. 5 stocks with most youngest CEOs and print sheet to output. You can find CEO info in Profile tab of concrete stock.
     Sheet's fields: Name, Code, Country, Employees, CEO Name, CEO Year Born.
@@ -229,7 +252,7 @@ def second_task():
         
         best_52.append([current_name, current_code, current_52_week_change, current_total_cash])
 
-    result_pretty_table = "==================================== 5 stocks with most youngest CEOs ===================================\n"
+    result_pretty_table = "==================================== 10 stocks with best 52-Week Change ===================================\n"
     result_pretty_table += "| Name        | Code | 52-week Change       | Total Cash |\n"
     result_pretty_table += "===========================================================================================================\n"
     best_52.sort(key=lambda x: x[2])
@@ -241,4 +264,15 @@ def second_task():
 #second_task()
 
 
+'''
+3. 10 largest holds of Blackrock Inc. You can find related info on the Holders tab.
+    Blackrock Inc is an investment management corporation.
+    Sheet's fields: Name, Code, Shares, Date Reported, % Out, Value.
+    All fields except first two should be taken from Holders tab.
+'''
 
+
+def third_task():
+    ...
+
+print(get_blackrock("Amazon.com, Inc.", "SOFI"))
