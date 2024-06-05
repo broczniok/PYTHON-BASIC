@@ -271,6 +271,29 @@ def second_task():
 
 
 def third_task():
-    ...
+    biggest_blackrock = []
+    codes = get_codes()["Code"]
+    names = get_codes()["Name"]
+    for i in range(0, len(codes)):
+        data = get_blackrock(names[i], codes[i])
+        current_name = names[i]
+        current_code = codes[i]
+        current_shares = float(data["Shares"][0][:-1])
+        current_date_reported = data["Date Reported"]
+        current_perc_out = data["% Out"]
+        current_value = data["Value"]
 
-print(get_blackrock("Amazon.com, Inc.", "SOFI"))
+        biggest_blackrock.append([current_name, current_code, current_shares, current_date_reported, current_perc_out, current_value])
+    
+    result_pretty_table = "==================================== 10 largest holds of Blackrock Inc ===================================\n"
+    result_pretty_table += "| Name        | Code | Shares       | Date Reported | % Out     | Value      |\n"
+    result_pretty_table += "===========================================================================================================\n"
+    biggest_blackrock.sort(key=lambda x: x[2])
+    for data in reversed(biggest_blackrock[-10:]):
+        result_pretty_table += f"| {data[0]} | {data[1]} | {str(data[2])} | {data[3]} | {data[4]} | {data[5]} |\n"
+    
+    print(result_pretty_table)
+
+third_task()
+
+#print(get_blackrock("Amazon.com, Inc.", "SOFI"))
