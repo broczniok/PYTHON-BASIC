@@ -20,8 +20,8 @@ class NoAttributeException(Exception):
 def math_calculate(function: str, *args):
     try:
         math_function = getattr(math, function)
-    except AttributeError:
-        raise OperationNotFoundException("Operation not found")
+    except AttributeError as ex:
+        raise OperationNotFoundException(ex)
     try:
         if len(args) == 1:
             return math_function(args[0])
