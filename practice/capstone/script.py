@@ -13,14 +13,30 @@ class ThreadingException(Exception):
 
 def get_parser():
     parser = argparse.ArgumentParser(prog="magicgenerator")
-    parser.add_argument('--path_to_save_files', required=True, help="Where all files need to be saved", type=argparse.FileType('w'))
-    parser.add_argument('--files_count' , help="How much json files to generate")
-    parser.add_argument('--file_name', help="What should the files be named (base: file_name)")
-    parser.add_argument('--file_prefix', required=True, help="What prefix for file name to use if there is more than 1 file to generate")
-    parser.add_argument('--data_schema', required=True, nargs='+', help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line")
-    parser.add_argument('--data_lines', help="Count of lines for each file (base=1000)")
-    parser.add_argument('--clear_path', help="Use if you want to overwrite all other files with same name in chosen directory")
-    parser.add_argument('--multiprocessing', help="The number of processes used to create files (base=1)")
+    parser.add_argument('--path_to_save_files', metavar="pathfile",required=True, help="Where all files need to be saved", type=str)
+    parser.add_argument('--files_count', metavar="file_count",  help="How much json files to generate", type=int)
+    parser.add_argument('--file_name', metavar="file_name", help="What should the files be named (base: file_name)", type=str)
+    parser.add_argument('--file_prefix', metavar="file_prefix", required=True, help="What prefix for file name to use if there is more than 1 file to generate", type=str)
+    parser.add_argument('--data_schema', metavar="data_schema", required=True, nargs='+', help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line", type=str)
+    parser.add_argument('--data_lines', metavar="data_lines", help="Count of lines for each file (base=1000)", type=int)
+    parser.add_argument('--clear_path', metavar="clear_path", help="Use if you want to overwrite all other files with same name in chosen directory")
+    parser.add_argument('--multiprocessing', metavar="multiprocessing", help="The number of processes used to create files (base=1)", type=int)
+
+    args = parser.parse_args()
+
+    pathfile = args.pathfile
+    file_count = args.file_count
+    file_name = args.file_name
+    file_prefix = args.file_prefix
+    data_schema = args.data_schema
+    data_lines = args.data_lines
+    clear_path = args.clear_path
+    multiprocessing = args.multiprocessing
+
+    #if args.
+
+
+
 
 def validate_schema(schema: str):
     if os.path.exists(schema):
