@@ -15,20 +15,21 @@ Examples:
     No numbers entered
 
 """
-import sys
 
-def read_numbers(n: int) -> str:
-    arguments = sys.argv[1:]
+def read_numbers(n: int) -> None:
     numbers = []
     sum = 0
+
     for i in range(n):
-        if(arguments[i].isdigit()):
-            numbers.append(int(arguments[i]))
-    if(len(numbers) > 0):
-        for y in range(len(numbers)):
-            sum += numbers[y]
-        print('Avg:', sum/n)
-    elif(len(numbers) == 0):
+        user_input = input(f"Enter number {i+1}: ")
+        if user_input.isdigit():
+            numbers.append(int(user_input))
+
+    if len(numbers) > 0:
+        for number in numbers:
+            sum += number
+        print('Avg:', sum / len(numbers))
+    else:
         print("No numbers entered")
 
 read_numbers(5)
