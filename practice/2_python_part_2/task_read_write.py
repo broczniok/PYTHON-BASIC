@@ -26,7 +26,7 @@ def read_file(path):
             with open(filepath, "r") as f:
                 for x in f:
                     x = x.strip()
-                    number_table.append(str(x))
+                    number_table.append(x)
             index += 1
         else:
             break
