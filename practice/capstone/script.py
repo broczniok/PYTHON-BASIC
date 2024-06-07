@@ -32,9 +32,10 @@ def get_parser():
     parser.add_argument('--multiprocessing', metavar="multiprocessing", help="The number of processes used to create files (base=1)", type=int)
 
     args = parser.parse_args()
+    
 
-    pathfile = args.pathfile
-    file_count = args.file_count
+    pathfile = args.path_to_save_files
+    files_count = args.files_count
     file_name = args.file_name
     file_prefix = args.file_prefix
     data_schema = args.data_schema
@@ -42,10 +43,10 @@ def get_parser():
     clear_path = args.clear_path
     multiprocessing = args.multiprocessing
 
-    if args.file_count is not None:
-        file_count = args.file_count
+    if args.files_count is not None:
+        files_count = args.files_count
     else:
-        file_count = int(config["DEFAULT"]["file_count"])
+        files_count = int(config["DEFAULT"]["files_count"])
     
     if args.file_name is not None:
         file_name = args.file_name
@@ -71,6 +72,21 @@ def get_parser():
         multiprocessing = args.multiprocessing
     else:
         multiprocessing = int(config["DEFAULT"]["multiprocessing"])
+
+    print("pathfile:",pathfile)
+    print("files conut:",files_count)
+    print("file name:",file_name)
+    print("data schema:", data_schema)
+    print("data lines:",data_lines)
+    print("clear path:",clear_path)
+    print("file prefix", file_prefix)
+    print("multiprocessing", multiprocessing)
+
+
+    
+    print("Working")
+
+
 
 
 
@@ -145,3 +161,5 @@ def main(multiprocessing: int):
     
     for thread in threads:
         thread.join()
+
+get_parser()
