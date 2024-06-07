@@ -33,4 +33,3 @@ def read_numbers(n: int) -> None:
         print("No numbers entered")
 
 read_numbers(5)
-
