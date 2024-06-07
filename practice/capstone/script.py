@@ -4,6 +4,7 @@ import json
 import os
 import random
 import threading
+from configparser import ConfigParser
 
 class JsonSchemaException(Exception):
     pass
@@ -12,11 +13,19 @@ class ThreadingException(Exception):
     pass
 
 def get_parser():
+
+    config = ConfigParser()
+    try:
+        config.read("default.ini")
+    except:
+        print("default.ini reading went wrong")
+        raise SystemExit()
+
     parser = argparse.ArgumentParser(prog="magicgenerator")
     parser.add_argument('--path_to_save_files', metavar="pathfile",required=True, help="Where all files need to be saved", type=str)
     parser.add_argument('--files_count', metavar="file_count",  help="How much json files to generate", type=int)
     parser.add_argument('--file_name', metavar="file_name", help="What should the files be named (base: file_name)", type=str)
-    parser.add_argument('--file_prefix', metavar="file_prefix", required=True, help="What prefix for file name to use if there is more than 1 file to generate", type=str)
+    parser.add_argument('--file_prefix', metavar="file_prefix", help="What prefix for file name to use if there is more than 1 file to generate", type=str)
     parser.add_argument('--data_schema', metavar="data_schema", required=True, nargs='+', help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line", type=str)
     parser.add_argument('--data_lines', metavar="data_lines", help="Count of lines for each file (base=1000)", type=int)
     parser.add_argument('--clear_path', metavar="clear_path", help="Use if you want to overwrite all other files with same name in chosen directory")
@@ -33,7 +42,36 @@ def get_parser():
     clear_path = args.clear_path
     multiprocessing = args.multiprocessing
 
-    #if args.
+    if args.file_count is not None:
+        file_count = args.file_count
+    else:
+        file_count = int(config["DEFAULT"]["file_count"])
+    
+    if args.file_name is not None:
+        file_name = args.file_name
+    else:
+        file_name = str(config["DEFAULT"]["file_name"])
+
+    if args.data_lines is not None:
+        data_lines = args.data_lines
+    else:
+        data_lines = int(config["DEFAULT"]["data_lines"])
+
+    if args.clear_path is not None:
+        clear_path = args.clear_path
+    else:
+        clear_path = str(config["DEFAULT"]["clear_path"])
+    
+    if args.file_prefix is not None:
+        file_prefix = args.file_prefix
+    else: 
+        file_prefix = str(config["DEFAULT"]["file_prefix"])
+
+    if args.multiprocessing is not None:
+        multiprocessing = args.multiprocessing
+    else:
+        multiprocessing = int(config["DEFAULT"]["multiprocessing"])
+
 
 
 
