@@ -16,6 +16,7 @@ Example:
 
 import os.path
 
+
 def read_file(path):
     index = 1
     number_table = []
@@ -25,23 +26,25 @@ def read_file(path):
             with open(filepath, "r") as f:
                 for x in f:
                     x = x.strip()
-                    if x.isdigit():
-                        number_table.append(int(x))
+                    number_table.append(str(x))
             index += 1
         else:
             break
     return number_table
 
 def write_file(number_table, path):
-    index = 1
-    result = ''
     while True:
-        result_filepath = os.path.join(path, f"result_{index}.txt")
+        result_filepath = os.path.join(path, f"result_1.txt")
         if not os.path.exists(result_filepath):
             with open(result_filepath, "x") as r:
-                r.write(str(", ".join(map(str, number_table)) + ", "))
+                for item in number_table:
+                    r.write(item+ ", ")
             break
-        index += 1
-
-filepath = "/Users/broczniok/Desktop/PYTHON-BASIC/practice/python_part_2/files/"
+        else:
+            with open(result_filepath, "w") as w:
+                for item in number_table:
+                    w.write(item+", ")
+            break
+        
+filepath = "/Users/broczniok/Desktop/PYTHON-BASIC/practice/2_python_part_2/files/"
 write_file(read_file(filepath), filepath)

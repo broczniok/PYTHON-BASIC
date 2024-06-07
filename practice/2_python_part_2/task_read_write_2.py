@@ -24,33 +24,35 @@ def generate_words(n=20):
     return words
 
 def write_to_file_utf(path):
-    index = 1
     table = generate_words()
     while(True):
-        if not exists(str(path)+ "/file_" + str(index) + ".txt"):
-            filepath = str(path)+ "/file_" + str(index) + ".txt"
-            f = open(filepath, "x", encoding="UTF-8")
-            for item in table:
-                f.write(item+'\n')
-            f.close()
+        filepath = str(path)+ "/file_1.txt"
+        if not exists(str(path)+ "/file_1.txt"):
+            with open(filepath, "x", encoding="UTF-8") as f:
+                for item in list(reversed(table)):
+                    f.write(item+'\n')
+            break
+        else:
+            with open(filepath, "w", encoding="UTF-8") as w:
+                for item in list(reversed(table)):
+                    w.write(item+'\n')
             break
         
-        index += 1
 
 def write_to_file_cp1252(path):
-    index = 1
     table = generate_words()
     while(True):
-        if not exists(str(path)+ "/file_" + str(index) + ".txt"):
-            filepath = str(path)+ "/file_" + str(index) + ".txt"
-            f = open(filepath, "x", encoding="CP1252")
-            for item in list(reversed(table)):
-                f.write(item + ',')
-            f.close()
+        filepath = str(path)+ "/file_1.txt"
+        if not exists(str(path)+ "/file_1.txt"):
+            with open(filepath, "x", encoding="CP1252") as f:
+                for item in list(reversed(table)):
+                    f.write(item+',')
             break
-        index += 1
-
-    
+        else:
+            with open(filepath, "w", encoding="CP1252") as w:
+                for item in list(reversed(table)):
+                    w.write(item+',')
+            break
 
 
 write_to_file_utf("files")
