@@ -14,30 +14,34 @@ Example:
     result.txt(content: "23, 78, 3")
 """
 
-from os.path import exists
+import os.path
 
-def read_and_write_to_file():
+def read_file(path):
     index = 1
     number_table = []
-    
     while True:
-        filepath = "files/file_" + str(index) + ".txt"
-        if exists(filepath):
+        filepath = os.path.join(path, f"file_{index}.txt")
+        if os.path.exists(filepath):
             with open(filepath, "r") as f:
                 for x in f:
-                    number_table.append(str(x))
-        
-        index += 1
-        if not exists("files/file_" + str(index) + ".txt"):
+                    x = x.strip()
+                    if x.isdigit():
+                        number_table.append(int(x))
+            index += 1
+        else:
             break
-    
+    return number_table
+
+def write_file(number_table, path):
     index = 1
+    result = ''
     while True:
-        result_filepath = "files/result_" + str(index) + ".txt"
-        if not exists(result_filepath):
+        result_filepath = os.path.join(path, f"result_{index}.txt")
+        if not os.path.exists(result_filepath):
             with open(result_filepath, "x") as r:
-                r.write(", ".join(number_table))
+                r.write(str(", ".join(map(str, number_table)) + ", "))
             break
         index += 1
 
-read_and_write_to_file()
+filepath = "/Users/broczniok/Desktop/PYTHON-BASIC/practice/python_part_2/files/"
+write_file(read_file(filepath), filepath)

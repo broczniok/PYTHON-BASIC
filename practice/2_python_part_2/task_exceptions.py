@@ -19,15 +19,17 @@ import typing
 class DivisionByOneException(Exception):
     pass
 
-def division(x: int, y: int) -> typing.Union[None, int]:
-    if(y == 0):
+def division(x: int, y: int) -> typing.Union[None, int]:   
+    try:
+        if(y == 1):
+            raise DivisionByOneException("Deletion on 1 get the same result")
+        return x/y
+    except ZeroDivisionError:
         print("Division by zero")
         return None
-    elif(y == 1):
-        raise DivisionByOneException("Deletion on 1 get the same result")
-    else:
-        return x/y
+    finally:
+        print("Division finished")
     
 print(division(1, 0))
-print(division(1, 1))
 print(division(2, 2))
+print(division(1, 1))

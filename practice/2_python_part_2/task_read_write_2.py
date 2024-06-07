@@ -23,23 +23,35 @@ def generate_words(n=20):
 
     return words
 
-def write_to_file():
+def write_to_file_utf(path):
     index = 1
     table = generate_words()
-    
-    while True:
-        file_path = f"files/file_{index}.txt"
-        if not exists(file_path):
-            with open(file_path, "x", encoding="utf-8") as f:
-                result = '\n'.join(table) + '\n'
-                f.write(result)
-            
-            reverse_file_path = f"files/reversed_file_{index}.txt"
-            with open(reverse_file_path, "x", encoding="cp1252") as f_reversed:
-                reversed_result = ','.join(reversed(table))+','
-                f_reversed.write(reversed_result)
-            return
+    while(True):
+        if not exists(str(path)+ "/file_" + str(index) + ".txt"):
+            filepath = str(path)+ "/file_" + str(index) + ".txt"
+            f = open(filepath, "x", encoding="UTF-8")
+            for item in table:
+                f.write(item+'\n')
+            f.close()
+            break
         
         index += 1
 
-write_to_file()
+def write_to_file_cp1252(path):
+    index = 1
+    table = generate_words()
+    while(True):
+        if not exists(str(path)+ "/file_" + str(index) + ".txt"):
+            filepath = str(path)+ "/file_" + str(index) + ".txt"
+            f = open(filepath, "x", encoding="CP1252")
+            for item in list(reversed(table)):
+                f.write(item + ',')
+            f.close()
+            break
+        index += 1
+
+    
+
+
+write_to_file_utf("files")
+write_to_file_cp1252("files")
