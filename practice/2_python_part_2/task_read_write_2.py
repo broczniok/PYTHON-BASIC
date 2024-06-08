@@ -27,10 +27,9 @@ def write_to_file_utf(path):
     while(True):
         filepath = str(path)+ "/file_1.txt"
         with open(filepath, "w", encoding="UTF-8") as w:
-
-                w.write(",".join(table))
+            w.write("\n".join(table))
         break
-        
+
 
 def write_to_file_cp1252(path):
     table = generate_words()
