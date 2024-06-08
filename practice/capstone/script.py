@@ -1,5 +1,9 @@
 import argparse
 import jsonschema
+from faker import Faker
+import uuid
+import time
+import logging
 import json
 import os
 import random
@@ -12,16 +16,63 @@ class JsonSchemaException(Exception):
 class ThreadingException(Exception):
     pass
 
+def fill_parser(config, args):
+    result = {"pathfile":[], "files_count": [], "file_name": [],"data_schema": [], "data_lines": [], "clear_path": [], "file_prefix": [], "multiprocessing": []}
+
+    result["pathfile"].append(args.path_to_save_files)
+    result["data_schema"].append(args.data_schema)
+
+    if args.files_count is not None:
+        result["files_count"].append(args.files_count)
+    else:
+        result["files_count"].append(int(config["DEFAULT"]["files_count"]))
+
+    if args.file_name is not None:
+        result["file_name"].append(args.file_name)
+    else:
+        result["file_name"].append(str(config["DEFAULT"]["file_name"]))
+
+
+    if args.data_lines is not None:
+        result["data_lines"].append(args.data_lines)
+    else:
+        result["data_lines"].append(int(config["DEFAULT"]["data_lines"]))
+
+
+    if args.clear_path is not None:
+        result["clear_path"].append(args.clear_path)
+
+    else:
+        result["clear_path"].append(str(config["DEFAULT"]["clear_path"]))
+
+
+    if args.file_prefix is not None:
+        result["file_prefix"].append(args.file_prefix)
+
+    else:
+        result["file_prefix"].append(str(config["DEFAULT"]["file_prefix"]))
+
+
+    if args.multiprocessing is not None:
+        result["multiprocessing"].append(args.multiprocessing)
+    else:
+        result["multiprocessing"].append(int(config["DEFAULT"]["multiprocessing"]))
+
+
+
+    return result
+
+
 def get_parser():
 
     config = ConfigParser()
     try:
         config.read("default.ini")
     except:
-        print("default.ini reading went wrong")
+        print("default.ini file reading went wrong")
         raise SystemExit()
 
-    parser = argparse.ArgumentParser(prog="magicgenerator")
+    parser = argparse.ArgumentParser(prog="magicgenerator", description="Capstone Project function that generates fake JSON files from command line.")
     parser.add_argument('--path_to_save_files', metavar="pathfile",required=True, help="Where all files need to be saved", type=str)
     parser.add_argument('--files_count', metavar="file_count",  help="How much json files to generate", type=int)
     parser.add_argument('--file_name', metavar="file_name", help="What should the files be named (base: file_name)", type=str)
@@ -32,90 +83,122 @@ def get_parser():
     parser.add_argument('--multiprocessing', metavar="multiprocessing", help="The number of processes used to create files (base=1)", type=int)
 
     args = parser.parse_args()
-    
 
-    pathfile = args.path_to_save_files
-    files_count = args.files_count
-    file_name = args.file_name
-    file_prefix = args.file_prefix
-    data_schema = args.data_schema
-    data_lines = args.data_lines
-    clear_path = args.clear_path
-    multiprocessing = args.multiprocessing
+    arguments = fill_parser(config, args)
 
-    if args.files_count is not None:
-        files_count = args.files_count
+    print("pathfile:",arguments["pathfile"][0])
+    print("files count:",arguments["files_count"][0])
+    print("file name:",arguments["file_name"][0])
+    print("data schema:", arguments["data_schema"][0])
+    print("data lines:",arguments["data_lines"][0])
+    print("clear path:",arguments["clear_path"][0])
+    print("file prefix", arguments["file_prefix"][0])
+    print("multiprocessing", arguments["multiprocessing"][0])
+
+    if validate_schema(str(arguments["data_schema"][0])) != 0:
+        print(parse_schema(handle_schema(str(arguments["data_schema"][0]))))
     else:
-        files_count = int(config["DEFAULT"]["files_count"])
-    
-    if args.file_name is not None:
-        file_name = args.file_name
-    else:
-        file_name = str(config["DEFAULT"]["file_name"])
-
-    if args.data_lines is not None:
-        data_lines = args.data_lines
-    else:
-        data_lines = int(config["DEFAULT"]["data_lines"])
-
-    if args.clear_path is not None:
-        clear_path = args.clear_path
-    else:
-        clear_path = str(config["DEFAULT"]["clear_path"])
-    
-    if args.file_prefix is not None:
-        file_prefix = args.file_prefix
-    else: 
-        file_prefix = str(config["DEFAULT"]["file_prefix"])
-
-    if args.multiprocessing is not None:
-        multiprocessing = args.multiprocessing
-    else:
-        multiprocessing = int(config["DEFAULT"]["multiprocessing"])
-
-    print("pathfile:",pathfile)
-    print("files conut:",files_count)
-    print("file name:",file_name)
-    print("data schema:", data_schema)
-    print("data lines:",data_lines)
-    print("clear path:",clear_path)
-    print("file prefix", file_prefix)
-    print("multiprocessing", multiprocessing)
+        print("Invalid schema")
 
 
-    
+
     print("Working")
 
 
 
+def parse_schema(schema_str):
+    schema = json.loads(schema_str)
+    data = {}
 
+    for key, value in schema.items():
+        try:
+            type_hint, generation_rule = value.split(":", 1)
+        except ValueError:
+            raise ValueError(f"Invalid schema format for key '{key}': missing ':' separator")
 
+        if type_hint == "timestamp":
+            if generation_rule:
+                logging.warning(f"Timestamp type does not support any values. Value for '{key}' will be ignored.")
+            data[key] = int(time.time())
+        elif type_hint == "str":
+            data[key] = generate_str_value(generation_rule)
+        elif type_hint == "int":
+            data[key] = generate_int_value(generation_rule)
+        else:
+            raise ValueError(f"Unsupported type '{type_hint}' for key '{key}'")
 
+    return data
 
-def validate_schema(schema: str):
-    if os.path.exists(schema):
-        with open(schema, "r") as f:
-            if jsonschema.validate(f.read()):
-                return 1
-    elif jsonschema.validate(schema):
-        return 2
+def generate_str_value(rule):
+    if rule == "rand":
+        return str(uuid.uuid4())
+    elif rule.startswith("[") and rule.endswith("]"):
+        rule = rule.replace("'", "\"")
+        values = json.loads(rule)
+        return random.choice(values)
     else:
+        return rule
+
+def generate_int_value(rule):
+    if rule == "rand":
+        return random.randint(0, 10000)
+    elif rule.startswith("rand(") and rule.endswith(")"):
+        range_str = rule[5:-1]
+        try:
+            start, end = map(int, range_str.split(","))
+            return random.randint(start, end)
+        except ValueError:
+            raise ValueError(f"Invalid range format in rule '{rule}'")
+    elif rule.startswith("[") and rule.endswith("]"):
+        rule = rule.replace("'", "\"")
+        values = json.loads(rule)
+        return random.choice(values)
+    elif rule == "":
+        return None
+    else:
+        try:
+            return int(rule)
+        except ValueError:
+            raise ValueError(f"Cannot convert '{rule}' to int")
+
+
+
+def validate_schema(schema_str):
+    try:
+        schema = json.loads(schema_str)
+
+        jsonschema.Draft7Validator.check_schema(schema)
+        return 2
+    except json.JSONDecodeError:
+
+        if os.path.exists(schema_str):
+            try:
+                with open(schema_str, "r") as f:
+                    schema = json.load(f)
+                jsonschema.Draft7Validator.check_schema(schema)
+                return 1
+            except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
+                print(f"Invalid schema in file: {e}")
+                return 0
+        else:
+            print("Invalid JSON format.")
+            return 0
+    except jsonschema.exceptions.SchemaError as e:
+        print(f"Invalid schema: {e.message}")
         return 0
 
 def handle_schema(schema: str) -> str:
-    if validate_schema(schema) == 1:
-        result = ""
+    schema_type = validate_schema(schema)
+    if schema_type == 1:
         with open(schema, "r") as f:
-            result = json.load(f)
+            result = f.read()
             return result
-    elif validate_schema(schema) == 2:
-        return json.load(schema)
+    elif schema_type == 2:
+        return schema
     else:
         return ""
     
 def generate_json(schema):
-    schema_type = schema.get('type')
-
     schema_type = schema.get('type')
 
     if schema_type == 'object':
@@ -163,3 +246,6 @@ def main(multiprocessing: int):
         thread.join()
 
 get_parser()
+
+schema_str = '{"date":"timestamp:", "name": "str:rand", "type":"str:[\'client\', \'partner\', \'government\']", "age": "int:rand(1, 90)"}'
+#print(parse_schema(schema_str))
