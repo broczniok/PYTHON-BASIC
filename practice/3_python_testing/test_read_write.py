@@ -14,7 +14,7 @@ import importlib
 res = importlib.import_module('task_read_write')
 
 #CONTENT = str(res.read_file(filepath))
-CONTENT = [1, 2, 3]
+CONTENT = ['1', '2', '3']
 
 def test_read_and_write_to_file(tmp_path):
    d = tmp_path / "files"

@@ -8,15 +8,18 @@ import pytest
 
 import os
 import sys
-import string
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '2_python_part_2'))
 
 import importlib
+
 res = importlib.import_module('task_read_write_2')
+
 
 def test_generate_words(n=20):
     assert res.generate_words()
     assert len(res.generate_words()) == 20
+
 
 def test_write_to_file_utf(tmp_path):
     d = tmp_path / "test_utf"
@@ -31,8 +34,9 @@ def test_write_to_file_utf(tmp_path):
     with files[0].open(encoding="UTF-8") as f:
         lines = f.readlines()
 
+    assert len(lines) == len(res.generate_words())
     for line in lines:
-        assert line.find('\n') >= 0
+        assert isinstance(line, str)
 
 
 def test_write_to_file_cp1252(tmp_path):
@@ -44,11 +48,8 @@ def test_write_to_file_cp1252(tmp_path):
     assert len(list(tmp_path.iterdir())) == 1
 
     files = list(d.iterdir())
-
     with files[0].open(encoding="CP1252") as f:
-        content = f.read()
-    
-    assert ',' in content
+        lines = f.read()
 
-    
+        assert ',' in lines
 

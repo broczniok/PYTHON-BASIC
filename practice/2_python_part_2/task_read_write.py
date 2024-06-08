@@ -35,16 +35,8 @@ def read_file(path):
 def write_file(number_table, path):
     while True:
         result_filepath = os.path.join(path, f"result_1.txt")
-        if not os.path.exists(result_filepath):
-            with open(result_filepath, "x") as r:
-                for item in number_table:
-                    r.write(item+ ", ")
-            break
-        else:
-            with open(result_filepath, "w") as w:
-                for item in number_table:
-                    w.write(item+", ")
-            break
+        with open(result_filepath, "w") as w:
+            w.write(", ".join(number_table))
+        break
 
-filepath = "/Users/broczniok/Desktop/PYTHON-BASIC/practice/2_python_part_2/files/"
-write_file(read_file(filepath), filepath)
+

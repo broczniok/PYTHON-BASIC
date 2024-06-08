@@ -22,14 +22,16 @@ res = importlib.import_module('task_input_output')
 
 
 def test_read_numbers_without_text_input(capfd):
-    with patch.object(sys, 'argv', ['task_input_output.py', '1', '2', '3', '4', '1']):
+    inputs = iter(['1', '2', '3', '4', '1'])
+    with patch('builtins.input', lambda _: next(inputs)):
             res.read_numbers(5)
             out,err = capfd.readouterr()
             assert out == 'Avg: 2.2\n'
 
 
 def test_read_numbers_with_text_input(capfd):
-    with patch.object(sys, 'argv', ['task_input_output.py', 'fasfas', 'sda', 'Text', 'asdad', 'dass']):
+    inputs = iter(['fasfas', 'sda', 'Text', 'asdad', 'dass'])
+    with patch('builtins.input', lambda _: next(inputs)):
             res.read_numbers(5)
             out,err = capfd.readouterr()
             assert out == 'No numbers entered\n'

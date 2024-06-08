@@ -30,6 +30,3 @@ def division(x: int, y: int) -> typing.Union[None, int]:
     finally:
         print("Division finished")
 
-print(division(1, 0))
-print(division(2, 2))
-print(division(1, 1))

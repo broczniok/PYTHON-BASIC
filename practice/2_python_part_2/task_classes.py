@@ -52,6 +52,9 @@ class Student:
 
 class Homework:
     def __init__(self, task, days) -> None:
+        if days < 0:
+            raise ValueError("Days cannot be negative")
+
         self.text = task
         self.created = datetime.now()
         self.deadline = timedelta(days=days)
@@ -79,5 +82,12 @@ if __name__ == '__main__':
     oop_homework = create_homework_too('create 2 simple classes', 5)
     oop_homework.deadline
 
+    create_homework_too = teacher.create_homework
+    oop_homework = create_homework_too('create 33 simple classes', -1)
+    oop_homework.deadline
+
+
     student.do_homework(oop_homework)
     student.do_homework(expired_homework)
+
+
