@@ -14,6 +14,8 @@ Example:
 {"some_name": "Courtney Duncan", "fake-address": "8107 Nicole Orchard Suite 762\nJosephchester, WI 05981"}
 """
 import argparse
+import json
+
 from faker import Faker
 
 
@@ -28,7 +30,7 @@ def print_name_address(args: argparse.Namespace) -> None:
                 instance[key] = getattr(fake, provider)()
         instances.append(instance)
     for instance in instances:
-        print(instance)
+        print(json.dumps(instance))
         
 
 

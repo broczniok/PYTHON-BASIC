@@ -1,7 +1,9 @@
+import argparse
 import unittest
+from io import StringIO
 from unittest.mock import Mock, patch
 from task_4 import print_name_address, get_parser
-from argparse import Namespace
+
 
 class TestPrintNameAddress(unittest.TestCase):
     @patch('task_4.Faker')
@@ -34,6 +36,7 @@ class TestPrintNameAddress(unittest.TestCase):
         print_name_address(m_1)
         print_name_address(m_2)
         print_name_address(m_3)
+
         
         fake_instance_1.name.assert_called_with()
         fake_instance_1.address.assert_called_with()
@@ -43,6 +46,43 @@ class TestPrintNameAddress(unittest.TestCase):
 
         fake_instance_3.url.assert_called_with()
         fake_instance_3.email.assert_called_with()
+
+        print_test_args = argparse.Namespace(number=1, fields=['name=name', 'address=address', 'country=country'])
+
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            print_name_address(print_test_args)
+            printed_output = fake_out.getvalue().strip()
+
+        expected_output = (
+            '{"name": "John Doe", "address": "123 Main St", "country": "Mayotte"}'
+        )
+
+        self.assertEqual(printed_output, expected_output)
+
+
+class TestGetParser(unittest.TestCase):
+
+    @patch('sys.argv', ['task_4.py', '2', '--fake-address=address', '--some_name=name'])
+    def test_get_parser(self):
+        expected = argparse.Namespace(number=2, fields=['fake-address=address', 'some_name=name'])
+        result = get_parser()
+        self.assertEqual(result.number, expected.number)
+        self.assertEqual(result.fields, expected.fields)
+
+    @patch('sys.argv', ['task_4.py', '5', '--city=city', '--state=state', '--zip=postcode'])
+    def test_get_parser_multiple_fields(self):
+        expected = argparse.Namespace(number=5, fields=['city=city', 'state=state', 'zip=postcode'])
+        result = get_parser()
+        self.assertEqual(result.number, expected.number)
+        self.assertEqual(result.fields, expected.fields)
+
+    @patch('sys.argv', ['task_4.py', '1', '--name=name'])
+    def test_get_parser_single_field(self):
+        expected = argparse.Namespace(number=1, fields=['name=name'])
+        result = get_parser()
+        self.assertEqual(result.number, expected.number)
+        self.assertEqual(result.fields, expected.fields)
+
 
 
 if __name__ == '__main__':
