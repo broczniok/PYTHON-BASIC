@@ -22,8 +22,7 @@ def generate_words(n=20):
 
     return words
 
-def write_to_file_utf(path):
-    table = generate_words()
+def write_to_file_utf(path, table):
     while(True):
         filepath = str(path)+ "/file_1.txt"
         with open(filepath, "w", encoding="UTF-8") as w:
@@ -31,8 +30,7 @@ def write_to_file_utf(path):
         break
 
 
-def write_to_file_cp1252(path):
-    table = generate_words()
+def write_to_file_cp1252(path, table):
     while(True):
         filepath = str(path)+ "/file_1.txt"
         with open(filepath, "w", encoding="CP1252") as w:

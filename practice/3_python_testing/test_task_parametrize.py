@@ -19,9 +19,7 @@ def fibonacci_1(n):
 
 
 def fibonacci_2(n):
-    if n <= 0:
-        return 0
-    elif n == 1:
+    if n == 1:
         return 1
     else:
         fibo = [0, 1]

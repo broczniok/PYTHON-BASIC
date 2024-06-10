@@ -25,7 +25,8 @@ def test_write_to_file_utf(tmp_path):
     d = tmp_path / "test_utf"
     d.mkdir()
 
-    res.write_to_file_utf(d)
+    table = res.generate_words()
+    res.write_to_file_utf(d, table)
 
     assert len(list(tmp_path.iterdir())) == 1
 
@@ -34,16 +35,17 @@ def test_write_to_file_utf(tmp_path):
     with files[0].open(encoding="UTF-8") as f:
         lines = f.readlines()
 
-    assert len(lines) == len(res.generate_words())
-    for line in lines:
-        assert isinstance(line, str)
+    assert len(lines) == len(table)
+    for line, expected_word in zip(lines, table):
+        assert line.strip() == expected_word
 
 
 def test_write_to_file_cp1252(tmp_path):
     d = tmp_path / "test_cp1252"
     d.mkdir()
 
-    res.write_to_file_cp1252(d)
+    table = res.generate_words()
+    res.write_to_file_cp1252(d, table)
 
     assert len(list(tmp_path.iterdir())) == 1
 
@@ -51,5 +53,9 @@ def test_write_to_file_cp1252(tmp_path):
     with files[0].open(encoding="CP1252") as f:
         lines = f.read()
 
-        assert ',' in lines
+    assert ',' in lines
+
+    words_from_file = [word.strip() for word in lines.split(',')]
+    assert words_from_file == list(reversed(table))
+
 
