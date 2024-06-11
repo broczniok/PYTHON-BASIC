@@ -30,8 +30,7 @@ def get_min_max(filename: str) -> Tuple[int, int]:
             elif(int(line) < min):
                 min = int(line)
 
-    return [min,max]
+    return min,max
+
 
 print(get_min_max("textfile.txt"))
-            
-
