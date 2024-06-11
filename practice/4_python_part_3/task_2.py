@@ -11,9 +11,28 @@ Examples:
 """
 import math
 
+class OperationNotFoundException(Exception):
+    pass
+
+class NoAttributeException(Exception):
+    pass
 
 def math_calculate(function: str, *args):
-    ...
+    try:
+        math_function = getattr(math, function)
+    except AttributeError as ex:
+        raise OperationNotFoundException(ex)
+    try:
+        if len(args) == 1:
+            return math_function(args[0])
+        elif len(args) == 2:
+            return math_function(args[0], args[1])
+        else:
+            raise TypeError("Incorrect number of arguments provided")
+    except TypeError:
+        raise NoAttributeException("Operation raised a TypeError due to invalid arguments")
+    return None 
+
 
 
 """

@@ -6,10 +6,21 @@ Examples:
      200, 'response data'
 """
 from typing import Tuple
+import urllib.request
+import ssl
 
+ssl._create_default_https_context = ssl._create_stdlib_context
 
 def make_request(url: str) -> Tuple[int, str]:
-    ...
+    req = urllib.request.Request(url)
+    try:
+        resp = urllib.request.urlopen(req)
+        status_code = resp.getcode()
+        body = resp.read().decode('utf-8')
+        return (status_code, body)
+    except Exception as e:
+        print(e)
+        return (0, str(e))
 
 
 """
