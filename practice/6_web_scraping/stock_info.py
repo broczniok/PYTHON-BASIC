@@ -158,12 +158,10 @@ def get_total_cash_52_range(company: str, code: str):
     total_cash_tds = soup.find_all("td", {"class": "value svelte-vaowmx"})
     if total_cash_tds:
         total_cash_td = total_cash_tds[14]
-        data["Total Cash"].append(total_cash_td.text.strip())
+        week_change_td = total_cash_tds[24]
 
-    week_range_sups = soup.find_all("sup")
-    if week_range_sups:
-        week_range_sup = week_range_sups[1]
-        data["52-week Change"].append(week_range_sup.text.strip())
+        data["Total Cash"].append(total_cash_td.text.strip())
+        data["52-week Change"].append(week_change_td.text.strip())
     
     return data
 
@@ -202,6 +200,7 @@ def first_task():
         data = get_filtered_data_soup(codes[i], names[i]) 
         current_name = names[i] 
         current_code = codes[i] 
+
         current_country = data["Country"]
         current_employees = data["Employees"]
         current_CEO_name = data["CEO"]
@@ -239,10 +238,13 @@ def second_task():
     best_52_week_change = 0
     for i in range(0, len(codes)): 
         data = get_total_cash_52_range(codes[i], names[i]) 
-        current_name = names[i] 
+        if not data["52-week Change"]:
+            continue
+        current_name = names[i]
         current_code = codes[i] 
+
         current_total_cash = data["Total Cash"]
-        current_52_week_change = float(data["52-week Change"][0])
+        current_52_week_change = float(data["52-week Change"][0][:-1])
        
 
         if float(current_52_week_change) >  best_52_week_change:
@@ -276,8 +278,13 @@ def third_task():
     names = get_codes()["Name"]
     for i in range(0, len(codes)):
         data = get_blackrock(names[i], codes[i])
+        if not data["Shares"]:
+            continue
         current_name = names[i]
+
         current_code = codes[i]
+         
+
         current_shares = float(data["Shares"][0][:-1])
         current_date_reported = data["Date Reported"]
         current_perc_out = data["% Out"]
@@ -296,4 +303,3 @@ def third_task():
 
 third_task()
 
-#print(get_blackrock("Amazon.com, Inc.", "SOFI"))
