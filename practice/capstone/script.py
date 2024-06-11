@@ -72,6 +72,26 @@ def get_parser():
 
     schema_validation_result = validate_schema(schema_str)
 
+    if arguments["multiprocessing"][0] < 0:
+        sys.exit(1)
+
+    if arguments["multiprocessing"][0] > os.cpu_count():
+        arguments["multiprocessing"][0] = os.cpu_count()
+
+    if schema_validation_result == 0:
+        print("Invalid schema")
+        return
+    else:
+        threads = []
+        for i in range(arguments["multiprocessing"][0]):
+            thread = threading.Thread(target=process_schema, args=(schema_str, i))
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+'''
     if schema_validation_result == 0:
         print("Invalid schema")
         return
@@ -84,12 +104,26 @@ def get_parser():
         print(parse_schema(schema_str, 1))
         print("^^^^ to powyzej jest ze stringa^^^^^")
 
+'''
 
 
 
 
-    print("Working")
 
+
+
+def process_schema(schema_str, source):
+    if validate_schema(schema_str) == 0:
+        print("Invalid schema")
+        return
+    elif validate_schema(schema_str) == 2:
+        print("Schema loaded from file and validated.")
+        print(parse_schema(schema_str,2))
+        print("^^^^ to powyzej jest z pliku^^^^^")
+    elif validate_schema(schema_str) == 1:
+        print("Schema string validated.")
+        print(parse_schema(schema_str, 1))
+        print("^^^^ to powyzej jest ze stringa^^^^^")
 
 
 def parse_schema(schema_str, type):
