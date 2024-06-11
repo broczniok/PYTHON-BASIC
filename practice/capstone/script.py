@@ -1,6 +1,6 @@
 import argparse
+import sys
 import jsonschema
-from faker import Faker
 import uuid
 import time
 import logging
@@ -38,7 +38,7 @@ def get_parser():
         config.read("default.ini")
     except:
         print("default.ini file reading went wrong")
-        raise SystemExit()
+        sys.exit(1)
 
     parser = argparse.ArgumentParser(prog="magicgenerator", description="Capstone Project function that generates fake JSON files from command line.")
     parser.add_argument('--path_to_save_files', metavar="pathfile",required=True, help="Where all files need to be saved", type=str)
@@ -100,7 +100,7 @@ def parse_schema(schema_str, type):
     elif type == 1:
         schema = json.loads(schema_str)
     else:
-        raise SystemExit("Invalid schema")
+        sys.exit(1)
 
     data = {}
 
