@@ -50,22 +50,23 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+import random
 
 ssl._create_default_https_context = ssl._create_stdlib_context
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Accept-Encoding": "gzip, deflate",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Cache-Control": "max-age=0",
-}
+
+user_agent = [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.79 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/7046A194A',
+    'Mozilla/5.0 (iPad; CPU OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5355d Safari/8536.25',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/534.55.3 (KHTML, like Gecko) Version/5.1.3 Safari/534.53.10',
+    'Opera/9.80 (X11; Linux i686; Ubuntu/14.10) Presto/2.12.388 Version/12.16',
+    'Mozilla/5.0 (Windows NT 6.0; rv:2.0) Gecko/20100101 Firefox/4.0 Opera 12.14',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0',
+    'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:77.0) Gecko/20100101 Firefox/77.0',
+]
 
 class BlockAll(cookiejar.CookiePolicy):
     return_ok = set_ok = domain_return_ok = path_return_ok = lambda self, *args, **kwargs: False
@@ -73,31 +74,14 @@ class BlockAll(cookiejar.CookiePolicy):
     rfc2965 = hide_cookie2 = False
 
 
-def make_request(url: str) -> Tuple[int, str]:
-    
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument(f"user-agent={HEADERS['User-Agent']}")
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
-    driver.get(url)
-    try:
-        accept_button = driver.find_element(By.CSS_SELECTOR, "button[name='agree']")
-        accept_button.click()
-        driver.implicitly_wait(5)  
-        body = driver.page_source
-        s = requests.Session()
-        s.cookies.set_policy(BlockAll())
-        req = s.get(url, headers=HEADERS)
-        status_code = req.status_code
-        return (status_code, body)
-    except Exception as e:
-        print(e)
-        return (0, str(e))
-    finally:
-        driver.quit()
+def make_request(url: str) -> tuple[int, str]:
+    req = requests.get(url, headers={'User-Agent': random.choice(user_agent)}, timeout=5)
+    if req.status_code == 200:
+        return 200, req.content
+    else:
+        print("Make request doesnt work")
+        return None
+
 
 def get_soup(url) -> BeautifulSoup:
     return BeautifulSoup(make_request(url)[1], 'html.parser')
@@ -196,6 +180,7 @@ def first_task():
     youngest = []
     codes = get_codes()["Code"]
     names = get_codes()["Name"]
+    youngest_name = ''
     for i in range(0, len(codes)): 
         data = get_filtered_data_soup(codes[i], names[i]) 
         current_name = names[i] 
@@ -205,15 +190,16 @@ def first_task():
         current_employees = data["Employees"]
         current_CEO_name = data["CEO"]
         current_CEO_year_born = data["CEO Year Born"]
-        current_youngest_index = 0
         current_youngest_CEO = 0
 
         for y in range(1, len(current_CEO_name)):
             if current_CEO_year_born[y] != '-- ' and int(current_CEO_year_born[y]) >  current_youngest_CEO:
-                current_youngest_index = y
+                
+                youngest_name = str(current_CEO_name[y])
                 current_youngest_CEO = int(current_CEO_year_born[y])
         
-        youngest.append([current_youngest_CEO, current_CEO_name[current_youngest_index], current_name, current_code, current_country, current_employees])
+        youngest.append([current_youngest_CEO, youngest_name, current_name, current_code, current_country, current_employees])
+
 
     result_pretty_table = "==================================== 5 stocks with most youngest CEOs ===================================\n"
     result_pretty_table += "| Name        | Code | Country       | Employees | CEO Name                             | CEO Year Born |\n"
@@ -302,4 +288,3 @@ def third_task():
     print(result_pretty_table)
 
 third_task()
-
