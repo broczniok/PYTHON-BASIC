@@ -74,7 +74,7 @@ def get_soup(url) -> BeautifulSoup:
 
 
 def get_codes():
-    url_name_code = "https://finance.yahoo.com/most-active"
+    url_name_code = "https://finance.yahoo.com/most-active?count=100&offset=0"
     soup = get_soup(url_name_code)
     codes = {"Code": [], "Name": []}
 
@@ -128,7 +128,7 @@ def get_total_cash_52_range(company: str, code: str):
     total_cash_tds = soup.find_all("td", {"class": "value svelte-vaowmx"})
     if total_cash_tds:
         total_cash_td = total_cash_tds[14]
-        week_change_td = total_cash_tds[24]
+        week_change_td = total_cash_tds[23]
 
         data["Total Cash"].append(total_cash_td.text.strip())
         data["52-week Change"].append(week_change_td.text.strip())
@@ -162,20 +162,20 @@ def get_blackrock(company: str, code: str):
 '''
 
 
-def first_task():
+def first_task(codes, names):
     youngest = []
-    codes = get_codes()["Code"]
-    names = get_codes()["Name"]
+
     youngest_name = ''
     for i in range(0, len(codes)):
         data = get_filtered_data_soup(codes[i], names[i])
         current_name = names[i]
         current_code = codes[i]
-
         current_country = data["Country"]
-        current_employees = data["Employees"]
-        current_CEO_name = data["CEO"]
-        current_CEO_year_born = data["CEO Year Born"]
+        if not data["Country"][0]:
+            current_country = "N/A"
+        current_employees = data["Employees"][0]
+        current_CEO_name = data["CEO"][0]
+        current_CEO_year_born = data["CEO Year Born"][0]
         current_youngest_CEO = 0
 
         for y in range(1, len(current_CEO_name)):
@@ -186,17 +186,32 @@ def first_task():
         youngest.append(
             [current_youngest_CEO, youngest_name, current_name, current_code, current_country, current_employees])
 
-    result_pretty_table = "==================================== 5 stocks with most youngest CEOs ===================================\n"
-    result_pretty_table += "| Name        | Code | Country       | Employees | CEO Name                             | CEO Year Born |\n"
-    result_pretty_table += "===========================================================================================================\n"
-    youngest.sort(key=lambda x: x[0])
+    header = ["Name", "Code", "Employees", "CEO Name", "CEO Year Born"]
+
+
+    max_lengths = [len(h) for h in header]
+
+    for row in youngest:
+        for i, item in enumerate(row):
+            max_lengths[i] = max(max_lengths[i], len(str(item)))
+
+
+    row_format = "| " + " | ".join([f"{{:<{max_length}}}" for max_length in max_lengths]) + " |"
+
+    table_width = sum(max_lengths) + len(max_lengths) * 3 + 1
+    title = "5 stocks with most youngest CEOs"
+    result_pretty_table = f"{'=' * ((table_width - len(title) - 2) // 2)} {title} {'=' * ((table_width - len(title) - 2) // 2)}\n"
+    result_pretty_table += row_format.format(*header) + "\n"
+    result_pretty_table += "=" * table_width + "\n"
+
+
     for data in reversed(youngest[-5:]):
-        result_pretty_table += f"| {data[2]} | {data[3]} | {str(data[4])} | {data[5]} | {data[1]} | {data[0]} |\n"
+        result_pretty_table += row_format.format(*data) + "\n"
+
 
     print(result_pretty_table)
 
 
-#first_task()
 
 '''
 2. 10 stocks with best 52-Week Change. 52-Week Change placed on Statistics tab.
@@ -204,10 +219,8 @@ def first_task():
 '''
 
 
-def second_task():
+def second_task(codes, names):
     best_52 = []
-    codes = get_codes()["Code"]
-    names = get_codes()["Name"]
     best_52_week_change = 0
     for i in range(0, len(codes)):
         data = get_total_cash_52_range(codes[i], names[i])
@@ -216,7 +229,7 @@ def second_task():
         current_name = names[i]
         current_code = codes[i]
 
-        current_total_cash = data["Total Cash"]
+        current_total_cash = data["Total Cash"][0]
         current_52_week_change = float(data["52-week Change"][0][:-1])
 
         if float(current_52_week_change) > best_52_week_change:
@@ -224,17 +237,33 @@ def second_task():
 
         best_52.append([current_name, current_code, current_52_week_change, current_total_cash])
 
-    result_pretty_table = "==================================== 10 stocks with best 52-Week Change ===================================\n"
-    result_pretty_table += "| Name        | Code | 52-week Change       | Total Cash |\n"
-    result_pretty_table += "===========================================================================================================\n"
-    best_52.sort(key=lambda x: x[2])
+    header = ["Name", "Code", "52-week Change", "Total Cash"]
+
+
+    max_lengths = [len(h) for h in header]
+
+    for row in best_52:
+        for i, item in enumerate(row):
+            max_lengths[i] = max(max_lengths[i], len(str(item)))
+
+
+    row_format = "| " + " | ".join([f"{{:<{max_length}}}" for max_length in max_lengths]) + " |"
+
+    table_width = sum(max_lengths) + len(max_lengths) * 3 + 1
+    title = "10 stocks with the best 52-week change"
+    result_pretty_table = f"{'=' * ((table_width - len(title) - 2) // 2)} {title} {'=' * ((table_width - len(title) - 2) // 2)}\n"
+    result_pretty_table += row_format.format(*header) + "\n"
+    result_pretty_table += "=" * table_width + "\n"
+
+
     for data in reversed(best_52[-10:]):
-        result_pretty_table += f"| {data[0]} | {data[1]} | {str(data[2])} | {str(data[3])}|\n"
+        result_pretty_table += row_format.format(*data) + "\n"
+
 
     print(result_pretty_table)
 
 
-second_task()
+
 
 '''
 3. 10 largest holds of Blackrock Inc. You can find related info on the Holders tab.
@@ -244,10 +273,9 @@ second_task()
 '''
 
 
-def third_task():
+def third_task(codes, names):
     biggest_blackrock = []
-    codes = get_codes()["Code"]
-    names = get_codes()["Name"]
+
     for i in range(0, len(codes)):
         data = get_blackrock(names[i], codes[i])
         if not data["Shares"]:
@@ -257,20 +285,46 @@ def third_task():
         current_code = codes[i]
 
         current_shares = float(data["Shares"][0][:-1])
-        current_date_reported = data["Date Reported"]
-        current_perc_out = data["% Out"]
-        current_value = data["Value"]
+        current_date_reported = data["Date Reported"][0]
+        current_perc_out = data["% Out"][0]
+        current_value = data["Value"][0]
 
         biggest_blackrock.append(
             [current_name, current_code, current_shares, current_date_reported, current_perc_out, current_value])
 
-    result_pretty_table = "==================================== 10 largest holds of Blackrock Inc ===================================\n"
-    result_pretty_table += "| Name        | Code | Shares       | Date Reported | % Out     | Value      |\n"
-    result_pretty_table += "===========================================================================================================\n"
-    biggest_blackrock.sort(key=lambda x: x[2])
+    header = ["Name", "Code", "Shares", "Date Reported", "% Out", "Value"]
+
+
+    max_lengths = [len(h) for h in header]
+
+    for row in biggest_blackrock:
+        for i, item in enumerate(row):
+            max_lengths[i] = max(max_lengths[i], len(str(item)))
+
+
+    row_format = "| " + " | ".join([f"{{:<{max_length}}}" for max_length in max_lengths]) + " |"
+
+    table_width = sum(max_lengths) + len(max_lengths) * 3 + 1
+    title = "10 largest holds of Blackrock Inc"
+    result_pretty_table = f"{'=' * ((table_width - len(title) - 2) // 2)} {title} {'=' * ((table_width - len(title) - 2) // 2)}\n"
+    result_pretty_table += row_format.format(*header) + "\n"
+    result_pretty_table += "=" * table_width + "\n"
+
+
     for data in reversed(biggest_blackrock[-10:]):
-        result_pretty_table += f"| {data[0]} | {data[1]} | {str(data[2])} | {data[3]} | {data[4]} | {data[5]} |\n"
+        result_pretty_table += row_format.format(*data) + "\n"
+
 
     print(result_pretty_table)
 
-#third_task()
+get_codes_var = get_codes()
+
+codes = get_codes_var["Code"]
+names = get_codes_var["Name"]
+
+
+first_task(codes, names)
+
+second_task(codes, names)
+
+third_task(codes, names)
