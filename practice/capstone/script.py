@@ -45,7 +45,7 @@ def get_parser():
     parser.add_argument('--path_to_save_files', metavar="pathfile",required=True, help="Where all files need to be saved", type=str)
     parser.add_argument('--files_count', metavar="file_count",  help="How much json files to generate", type=int)
     parser.add_argument('--file_name', metavar="file_name", help="What should the files be named (base: file_name)", type=str)
-    parser.add_argument('--file_prefix', metavar="file_prefix", help="What prefix for file name to use if there is more than 1 file to generate", type=str)
+    parser.add_argument('--file_prefix', choices=["count","random","uuid"], help="What prefix for file name to use if there is more than 1 file to generate", type=str)
     parser.add_argument('--data_schema', metavar="data_schema", required=True, help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line", type=str)
     parser.add_argument('--data_lines', metavar="data_lines", help="Count of lines for each file (base=1000)", type=int)
     parser.add_argument('--clear_path', action="store_true", help="Use if you want to overwrite all other files with same name in chosen directory")
