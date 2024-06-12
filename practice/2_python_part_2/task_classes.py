@@ -52,6 +52,7 @@ class Student:
 
 class Homework:
     def __init__(self, task, days) -> None:
+
         if days < 0:
             raise ValueError("Days cannot be negative")
 
@@ -69,6 +70,7 @@ class Homework:
 if __name__ == '__main__':
     teacher = Teacher('Dmitry', 'Orlyakov')
     student = Student('Vladislav', 'Popov')
+
     teacher.last_name
     student.first_name
 
@@ -89,5 +91,4 @@ if __name__ == '__main__':
 
     student.do_homework(oop_homework)
     student.do_homework(expired_homework)
-
 

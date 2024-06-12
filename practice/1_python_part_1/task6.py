@@ -32,6 +32,5 @@ def get_min_max(filename: str) -> Tuple[int, int]:
 
     return min,max
 
-print(get_min_max("textfile.txt"))
-            
 
+print(get_min_max("textfile.txt"))

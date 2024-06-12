@@ -32,11 +32,14 @@ def read_file(path):
             break
     return number_table
 
+
 def write_file(number_table, path):
     while True:
         result_filepath = os.path.join(path, f"result_1.txt")
         with open(result_filepath, "w") as w:
             w.write(", ".join(number_table))
         break
+
+
 
 
