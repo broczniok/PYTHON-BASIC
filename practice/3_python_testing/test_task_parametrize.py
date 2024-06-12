@@ -21,9 +21,6 @@ def fibonacci_1(n):
 
 
 def fibonacci_2(n):
-    if n == 1:
-        return 1
-    else:
         fibo = [0, 1]
         for i in range(2, n+1):
             fibo.append(fibo[i-1] + fibo[i-2])
