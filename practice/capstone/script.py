@@ -84,7 +84,7 @@ def get_parser():
     else:
         threads = []
         for i in range(arguments["multiprocessing"][0]):
-            thread = threading.Thread(target=process_schema, args=(schema_str, i))
+            thread = threading.Thread(target=process_schema, args=(schema_str, arguments["pathfile"][0],arguments["file_count"][0], arguments["file_name"][0], arguments["data_lines"][0], arguments["clear_path"][0], arguments["file_prefix"][0], i))
             threads.append(thread)
             thread.start()
 
@@ -112,15 +112,15 @@ def get_parser():
 
 
 
-def process_schema(schema_str, source):
+def process_schema(schema_str, pathfile , file_count, file_name, data_lines, clear_path, file_prefix, source):
     if validate_schema(schema_str) == 0:
         print("Invalid schema")
         return
-    elif validate_schema(schema_str) == 2:
+    elif validate_schema(schema_str) == 2: # Schema is from file
         print("Schema loaded from file and validated.")
         print(parse_schema(schema_str,2))
         print("^^^^ to powyzej jest z pliku^^^^^")
-    elif validate_schema(schema_str) == 1:
+    elif validate_schema(schema_str) == 1: # Schema is from string
         print("Schema string validated.")
         print(parse_schema(schema_str, 1))
         print("^^^^ to powyzej jest ze stringa^^^^^")
