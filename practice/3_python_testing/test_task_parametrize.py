@@ -12,6 +12,8 @@ Task:
 import pytest
 
 def fibonacci_1(n):
+    if n == 0:
+        return 0
     a, b = 0, 1
     for _ in range(n-1):
         a, b = b, a + b
@@ -27,7 +29,7 @@ def fibonacci_2(n):
             fibo.append(fibo[i-1] + fibo[i-2])
         return fibo[n]
 
-@pytest.mark.parametrize("test_input, expected",[(1, 1), (2, 1), (3, 2), (4, 3), (5, 5)])
+@pytest.mark.parametrize("test_input, expected",[(0,0), (1, 1), (2, 1), (3, 2), (4, 3), (5, 5)])
 def test_fibo_eval(test_input, expected):
     assert fibonacci_1(test_input) == expected
     assert fibonacci_2(test_input) == expected
