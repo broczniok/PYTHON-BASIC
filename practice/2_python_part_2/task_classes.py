@@ -32,7 +32,7 @@ class Teacher:
     def __init__(self, first_name, last_name) -> None:
         self.first_name = first_name
         self.last_name = last_name
-    
+
     def create_homework(self, text, days):
         return Homework(text, days)
 
@@ -41,7 +41,7 @@ class Student:
     def __init__(self, first_name, last_name) -> None:
         self.first_name = first_name
         self.last_name = last_name
-    
+
     def do_homework(self, homework):
         if(homework.is_active()):
             print("You still have time")
@@ -52,10 +52,14 @@ class Student:
 
 class Homework:
     def __init__(self, task, days) -> None:
+
+        if days < 0:
+            raise ValueError("Days cannot be negative")
+
         self.text = task
         self.created = datetime.now()
         self.deadline = timedelta(days=days)
-    
+
     def is_active(self):
         now = datetime.now()
         if(now > self.created + self.deadline):
@@ -66,18 +70,25 @@ class Homework:
 if __name__ == '__main__':
     teacher = Teacher('Dmitry', 'Orlyakov')
     student = Student('Vladislav', 'Popov')
-    teacher.last_name  
-    student.first_name  
+
+    teacher.last_name
+    student.first_name
 
     expired_homework = teacher.create_homework('Learn functions', 0)
-    expired_homework.created  
-    expired_homework.deadline  
-    expired_homework.text  
+    expired_homework.created
+    expired_homework.deadline
+    expired_homework.text
 
-    
+
     create_homework_too = teacher.create_homework
     oop_homework = create_homework_too('create 2 simple classes', 5)
-    oop_homework.deadline  
+    oop_homework.deadline
+
+    create_homework_too = teacher.create_homework
+    oop_homework = create_homework_too('create 33 simple classes', -1)
+    oop_homework.deadline
+
 
     student.do_homework(oop_homework)
-    student.do_homework(expired_homework)  
+    student.do_homework(expired_homework)
+

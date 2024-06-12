@@ -41,5 +41,5 @@ def write_file(number_table, path):
         break
 
 
-filepath = "/Users/broczniok/Desktop/PYTHON-BASIC/practice/2_python_part_2/files/"
-write_file(read_file(filepath), filepath)
+
+
