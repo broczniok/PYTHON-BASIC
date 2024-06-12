@@ -26,7 +26,7 @@ def fill_parser(config, args):
         "file_name": [args.file_name or str(config["DEFAULT"]["file_name"])],
         "data_schema": [args.data_schema],
         "data_lines": [args.data_lines or int(config["DEFAULT"]["data_lines"])],
-        "clear_path": [args.clear_path or str(config["DEFAULT"]["clear_path"])],
+        "clear_path": [args.clear_path or bool(config["DEFAULT"]["clear_path"])],
         "file_prefix": [args.file_prefix or str(config["DEFAULT"]["file_prefix"])],
         "multiprocessing": [args.multiprocessing or int(config["DEFAULT"]["multiprocessing"])]
     }
@@ -61,7 +61,7 @@ def get_parser():
     #print("file name:",arguments["file_name"][0])
     print("data schema:", str(arguments["data_schema"][0]), type(arguments["data_schema"][0]))
     #print("data lines:",arguments["data_lines"][0])
-    #print("clear path:",arguments["clear_path"][0])
+    print("clear path:",arguments["clear_path"][0], type(arguments["clear_path"][0]))
     #print("file prefix", arguments["file_prefix"][0])
     #print("multiprocessing", arguments["multiprocessing"][0])
 
@@ -71,17 +71,26 @@ def get_parser():
     #if schema_str.startswith("{"):
         #print("Starts with {")
 
+
+
     if not os.path.exists(arguments["pathfile"][0]):
         os.makedirs(arguments["pathfile"][0])
         os.chmod(arguments["pathfile"][0], 0o777)
 
-    if arguments["clear_path"][0]:
+
+    if arguments["clear_path"][0] == True:
         for filename in os.listdir(arguments["pathfile"][0]):
             if arguments["file_name"][0] in filename:
                 file_to_delete = os.path.join(arguments["pathfile"][0], filename)
                 if os.path.isfile(file_to_delete):
                     os.remove(file_to_delete)
 
+        print("Files deleted")
+
+
+    if arguments["multiprocessing"][0] < 0:
+        print("Invalid multiprocessing count.")
+        return
 
     if arguments["multiprocessing"][0] > os.cpu_count():
         arguments["multiprocessing"][0] = os.cpu_count()
@@ -91,8 +100,13 @@ def get_parser():
         print("Invalid schema")
         return
     else:
+        lock = threading.Lock()
         threads = []
+        if arguments["multiprocessing"] > arguments["files_count"]:
+            arguments["multiprocessing"] = arguments["files_count"]
+
         for i in range(arguments["multiprocessing"][0]):
+
             thread = threading.Thread(target=thread_task, args=(
                 arguments["data_schema"][0],
                 arguments["pathfile"][0],
@@ -102,27 +116,28 @@ def get_parser():
                 arguments["clear_path"][0],
                 arguments["file_prefix"][0],
                 i,
-                arguments["multiprocessing"][0]
+                arguments["multiprocessing"][0],
+                lock
             ))
             threads.append(thread)
             thread.start()
 
         for thread in threads:
             thread.join(1)
-
-
+            if thread.is_alive():
+                print(f"Thread {thread.name} did not complete in time and will be terminated.")
 
 
 #  python3 script.py --path_to_save_files="./files" --data_schema="{\"date\": \"timestamp:\",\"name\": \"str:rand\",\"type\": \"['client', 'partner', 'government']\",\"age\": \"int:rand(1, 90)\"}" --multiprocessing=5 --files_count=3
 #  python3 script.py --path_to_save_files="./files" --data_schema="json_file.json" --multiprocessing=5 --files_count=3
 
-def thread_task(schema_str, pathfile, files_count, file_name, data_lines, clear_path, file_prefix, thread_index, total_threads):
-    # Calculate the number of files this thread should create
+def thread_task(schema_str, pathfile, files_count, file_name, data_lines, clear_path, file_prefix, thread_index, total_threads, lock):
+
     files_per_thread = ceil(files_count / total_threads)
     start_index = thread_index * files_per_thread
     end_index = min(start_index + files_per_thread, files_count)
 
-    process_schema(schema_str, pathfile, end_index - start_index, file_name, data_lines, clear_path, file_prefix, thread_index)
+    process_schema(schema_str, pathfile, end_index - start_index, file_name, data_lines, clear_path, file_prefix, thread_index, lock)
 
 
 
@@ -135,7 +150,7 @@ def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
     return filename
 
 
-def process_schema(schema_str, pathfile , files_count, file_name, data_lines, clear_path, file_prefix, thread_index):
+def process_schema(schema_str, pathfile , files_count, file_name, data_lines, clear_path, file_prefix, thread_index, lock):
 
     if clear_path:
         for filename in os.listdir(pathfile):
@@ -149,22 +164,24 @@ def process_schema(schema_str, pathfile , files_count, file_name, data_lines, cl
         return
     elif validate_schema(schema_str) == 2: # Schema is from file
         print("Schema loaded from file and validated.")
-        for _ in range(0, files_count):
-            filename = get_unique_filename(pathfile, file_name, file_prefix)
-            with open(filename, 'w') as file:
-                for _ in range(data_lines):
-                    file.write(str(parse_schema(schema_str,2)))
-                    file.write("\n")
+        with lock:
+            for _ in range(0, files_count):
+                filename = get_unique_filename(pathfile, file_name, file_prefix)
+                with open(filename, 'w') as file:
+                    for _ in range(data_lines):
+                        file.write(str(parse_schema(schema_str,2)))
+                        file.write("\n")
 
     elif validate_schema(schema_str) == 1: # Schema is from string
         print("Schema string validated.")
-        for _ in range(0,files_count):
-            filename = get_unique_filename(pathfile, file_name, file_prefix)
-            #print(filename)
-            with open(filename, 'w') as file:
-                for _ in range(data_lines):
-                    file.write((str(parse_schema(schema_str,1))))
-                    file.write("\n")
+        with lock:
+            for _ in range(0,files_count):
+                filename = get_unique_filename(pathfile, file_name, file_prefix)
+                #print(filename)
+                with open(filename, 'w') as file:
+                    for _ in range(data_lines):
+                        file.write((str(parse_schema(schema_str,1))))
+                        file.write("\n")
 
         #print(parse_schema(schema_str, 1))
         #print("^^^^ above from string ^^^^^")
