@@ -1,5 +1,7 @@
 import argparse
 import sys
+from math import ceil
+
 import jsonschema
 import uuid
 import time
@@ -65,54 +67,76 @@ def get_parser():
 
     schema_str = args.data_schema
 
-    print("Schema od 0",schema_str[0])
-    if schema_str.startswith("{"):
-        print("Starts with {")
+    #print("Schema od 0",schema_str[0])
+    #if schema_str.startswith("{"):
+        #print("Starts with {")
 
+    if not os.path.exists(arguments["pathfile"][0]):
+        os.makedirs(arguments["pathfile"][0])
+        os.chmod(arguments["pathfile"][0], 0o777)
 
-    schema_validation_result = validate_schema(schema_str)
+    if arguments["clear_path"][0]:
+        for filename in os.listdir(arguments["pathfile"][0]):
+            if arguments["file_name"][0] in filename:
+                file_to_delete = os.path.join(arguments["pathfile"][0], filename)
+                if os.path.isfile(file_to_delete):
+                    os.remove(file_to_delete)
 
-    if arguments["multiprocessing"][0] < 0:
-        sys.exit(1)
 
     if arguments["multiprocessing"][0] > os.cpu_count():
         arguments["multiprocessing"][0] = os.cpu_count()
 
+    schema_validation_result = validate_schema(str(arguments["data_schema"][0]))
     if schema_validation_result == 0:
         print("Invalid schema")
         return
     else:
         threads = []
         for i in range(arguments["multiprocessing"][0]):
-            thread = threading.Thread(target=process_schema, args=(schema_str, arguments["pathfile"][0],arguments["files_count"][0], arguments["file_name"][0], arguments["data_lines"][0], arguments["clear_path"][0], arguments["file_prefix"][0], i))
+            thread = threading.Thread(target=thread_task, args=(
+                arguments["data_schema"][0],
+                arguments["pathfile"][0],
+                arguments["files_count"][0],
+                arguments["file_name"][0],
+                arguments["data_lines"][0],
+                arguments["clear_path"][0],
+                arguments["file_prefix"][0],
+                i,
+                arguments["multiprocessing"][0]
+            ))
             threads.append(thread)
             thread.start()
 
         for thread in threads:
-            thread.join()
-
-'''
-    if schema_validation_result == 0:
-        print("Invalid schema")
-        return
-    elif schema_validation_result == 2:
-        print("Schema loaded from file and validated.")
-        print(parse_schema(schema_str,2))
-        print("^^^^ to powyzej jest z pliku^^^^^")
-    elif schema_validation_result == 1:
-        print("Schema string validated.")
-        print(parse_schema(schema_str, 1))
-        print("^^^^ to powyzej jest ze stringa^^^^^")
-
-'''
+            thread.join(1)
 
 
 
 
+#  python3 script.py --path_to_save_files="./files" --data_schema="{\"date\": \"timestamp:\",\"name\": \"str:rand\",\"type\": \"['client', 'partner', 'government']\",\"age\": \"int:rand(1, 90)\"}" --multiprocessing=5 --files_count=3
+#  python3 script.py --path_to_save_files="./files" --data_schema="json_file.json" --multiprocessing=5 --files_count=3
+
+def thread_task(schema_str, pathfile, files_count, file_name, data_lines, clear_path, file_prefix, thread_index, total_threads):
+    # Calculate the number of files this thread should create
+    files_per_thread = ceil(files_count / total_threads)
+    start_index = thread_index * files_per_thread
+    end_index = min(start_index + files_per_thread, files_count)
+
+    process_schema(schema_str, pathfile, end_index - start_index, file_name, data_lines, clear_path, file_prefix, thread_index)
 
 
 
-def process_schema(schema_str, pathfile , files_count, file_name, data_lines, clear_path, file_prefix, source):
+def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
+    index = 1
+    filename = os.path.join(pathfile, f"{file_name}_{file_prefix}.{extension}")
+    while os.path.exists(filename):
+        filename = os.path.join(pathfile, f"{file_name}_{file_prefix}({index}).{extension}")
+        index += 1
+    return filename
+
+
+def process_schema(schema_str, pathfile , files_count, file_name, data_lines, clear_path, file_prefix, thread_index):
+
     if clear_path:
         for filename in os.listdir(pathfile):
             if file_name in filename:
@@ -120,24 +144,30 @@ def process_schema(schema_str, pathfile , files_count, file_name, data_lines, cl
                 if os.path.isfile(file_to_delete):
                     os.remove(file_to_delete)
 
-
     if validate_schema(schema_str) == 0:
         print("Invalid schema")
         return
     elif validate_schema(schema_str) == 2: # Schema is from file
         print("Schema loaded from file and validated.")
-        for _ in range(files_count):
-            filename = os.path.join(pathfile, filename, file_prefix, ".txt")
+        for _ in range(0, files_count):
+            filename = get_unique_filename(pathfile, file_name, file_prefix)
             with open(filename, 'w') as file:
                 for _ in range(data_lines):
-                    file.write(parse_schema(schema_str,2))
+                    file.write(str(parse_schema(schema_str,2)))
+                    file.write("\n")
 
-        print(parse_schema(schema_str,2))
-        print("^^^^ to powyzej jest z pliku^^^^^")
     elif validate_schema(schema_str) == 1: # Schema is from string
         print("Schema string validated.")
-        print(parse_schema(schema_str, 1))
-        print("^^^^ to powyzej jest ze stringa^^^^^")
+        for _ in range(0,files_count):
+            filename = get_unique_filename(pathfile, file_name, file_prefix)
+            #print(filename)
+            with open(filename, 'w') as file:
+                for _ in range(data_lines):
+                    file.write((str(parse_schema(schema_str,1))))
+                    file.write("\n")
+
+        #print(parse_schema(schema_str, 1))
+        #print("^^^^ above from string ^^^^^")
 
 
 def parse_schema(schema_str, type):
@@ -219,7 +249,7 @@ def validate_schema(schema_str):
                     schema['minItems'] = 1
                     schema['uniqueItems'] = True
                 jsonschema.Draft7Validator.check_schema(schema)
-                print("Done")
+                #print("Done")
             return 2
         except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
             print(f"Invalid schema in file: {e}")
