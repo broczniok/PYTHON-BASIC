@@ -26,7 +26,6 @@ def fill_parser(config, args):
         "file_name": [args.file_name or str(config["DEFAULT"]["file_name"])],
         "data_schema": [args.data_schema],
         "data_lines": [args.data_lines or int(config["DEFAULT"]["data_lines"])],
-        "clear_path": [args.clear_path or bool(config["DEFAULT"]["clear_path"])],
         "file_prefix": [args.file_prefix or str(config["DEFAULT"]["file_prefix"])],
         "multiprocessing": [args.multiprocessing or int(config["DEFAULT"]["multiprocessing"])]
     }
@@ -49,7 +48,7 @@ def get_parser():
     parser.add_argument('--file_prefix', metavar="file_prefix", help="What prefix for file name to use if there is more than 1 file to generate", type=str)
     parser.add_argument('--data_schema', metavar="data_schema", required=True, help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line", type=str)
     parser.add_argument('--data_lines', metavar="data_lines", help="Count of lines for each file (base=1000)", type=int)
-    parser.add_argument('--clear_path', metavar="clear_path", help="Use if you want to overwrite all other files with same name in chosen directory")
+    parser.add_argument('--clear_path', action="store_true", help="Use if you want to overwrite all other files with same name in chosen directory")
     parser.add_argument('--multiprocessing', metavar="multiprocessing", help="The number of processes used to create files (base=1)", type=int)
 
     args = parser.parse_args()
@@ -61,18 +60,17 @@ def get_parser():
     #print("file name:",arguments["file_name"][0])
     print("data schema:", str(arguments["data_schema"][0]), type(arguments["data_schema"][0]))
     #print("data lines:",arguments["data_lines"][0])
-    print("clear path:",arguments["clear_path"][0], type(arguments["clear_path"][0]))
     #print("file prefix", arguments["file_prefix"][0])
     #print("multiprocessing", arguments["multiprocessing"][0])
 
-    schema_str = args.data_schema
+    #schema_str = args.data_schema
 
     if not os.path.exists(arguments["pathfile"][0]):
         os.makedirs(arguments["pathfile"][0])
         os.chmod(arguments["pathfile"][0], 0o777)
 
 
-    if arguments["clear_path"][0] == "True":
+    if args.clear_path:
         for filename in os.listdir(arguments["pathfile"][0]):
             if arguments["file_name"][0] in filename:
                 file_to_delete = os.path.join(arguments["pathfile"][0], filename)
