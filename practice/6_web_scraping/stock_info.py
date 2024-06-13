@@ -33,6 +33,8 @@ Links:
 """
 
 import ssl
+import time
+
 from bs4 import BeautifulSoup
 import requests
 from http import cookiejar
@@ -70,6 +72,7 @@ def make_request(url: str) -> tuple[int, bytes]:
 
 
 def get_soup(url) -> BeautifulSoup:
+    time.sleep(5)
     return BeautifulSoup(make_request(url)[1], 'html.parser')
 
 
@@ -93,19 +96,16 @@ def get_filtered_data_soup(company: str, code: str):
     data = {"Name": [], "Code": [], "Country": [], "Employees": [], "CEO": [], "CEO Year Born": []}
     data["Code"].append(code)
     data["Name"].append(company)
-    print(company, "|", code)
 
     soup = get_soup(url_profile)
     country_divs = soup.find_all("div", {"class": "address svelte-wxp4ja"})
     if country_divs:
         last_country_div = country_divs[-1]
-        print("last country div", last_country_div)
         data["Country"].append(last_country_div.text.strip())
     dds = soup.find_all("dd")
     for dd in dds:
         strong_tag = dd.find("strong")
         if strong_tag:
-            print("employees:", strong_tag.text)
             data["Employees"].append(strong_tag.text)
 
     tables = soup.find_all("table", {"class": "svelte-mj92za"})
@@ -197,7 +197,6 @@ def first_task(codes, names):
                 crt_ceo_year = int(current_CEO_year_born[0])
 
             except ValueError:
-                print("didnt have year")
                 continue
 
             if crt_ceo_year > current_youngest_CEO:
@@ -226,7 +225,6 @@ def first_task(codes, names):
     result_pretty_table += "=" * table_width + "\n"
 
     for data in reversed(youngest[-5:]):
-
         result_pretty_table += row_format.format(*map(str, data)) + "\n"
 
     print(result_pretty_table)
@@ -274,12 +272,11 @@ def second_task(codes, names):
     result_pretty_table += row_format.format(*header) + "\n"
     result_pretty_table += "=" * table_width + "\n"
 
-
     for data in reversed(best_52[-10:]):
         result_pretty_table += row_format.format(*data) + "\n"
 
-
     print(result_pretty_table)
+
 
 '''
 3. 10 largest holds of Blackrock Inc. You can find related info on the Holders tab.
@@ -287,6 +284,7 @@ def second_task(codes, names):
     Sheet's fields: Name, Code, Shares, Date Reported, % Out, Value.
     All fields except first two should be taken from Holders tab.
 '''
+
 
 def third_task(codes, names):
     biggest_blackrock = []
@@ -316,7 +314,6 @@ def third_task(codes, names):
         for i, item in enumerate(row):
             max_lengths[i] = max(max_lengths[i], len(str(item)))
 
-
     row_format = "| " + " | ".join([f"{{:<{max_length}}}" for max_length in max_lengths]) + " |"
 
     table_width = sum(max_lengths) + len(max_lengths) * 3 + 1
@@ -325,18 +322,16 @@ def third_task(codes, names):
     result_pretty_table += row_format.format(*header) + "\n"
     result_pretty_table += "=" * table_width + "\n"
 
-
     for data in reversed(biggest_blackrock[-10:]):
         result_pretty_table += row_format.format(*data) + "\n"
 
-
     print(result_pretty_table)
+
 
 get_codes_var = get_codes()
 
 codes = get_codes_var["Code"]
 names = get_codes_var["Name"]
-
 
 first_task(codes, names)
 
