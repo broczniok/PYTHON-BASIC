@@ -2,8 +2,9 @@ import os
 import requests
 import concurrent.futures 
 from datetime import datetime, timedelta
+import key as k
 
-API_KEY = "APIKEY"
+API_KEY = k.api_key
 APOD_ENDPOINT = 'https://api.nasa.gov/planetary/apod'
 OUTPUT_IMAGES = './output'
 
