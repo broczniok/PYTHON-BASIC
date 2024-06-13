@@ -34,7 +34,6 @@ Links:
 
 import ssl
 import time
-
 from bs4 import BeautifulSoup
 import requests
 from http import cookiejar
@@ -72,7 +71,7 @@ def make_request(url: str) -> tuple[int, bytes]:
 
 
 def get_soup(url) -> BeautifulSoup:
-    time.sleep(5)
+    time.sleep(10)
     return BeautifulSoup(make_request(url)[1], 'html.parser')
 
 
@@ -158,13 +157,6 @@ def get_blackrock(company: str, code: str):
     return data
 
 
-'''
-1. 5 stocks with most youngest CEOs and print sheet to output. You can find CEO info in Profile tab of concrete stock.
-    Sheet's fields: Name, Code, Country, Employees, CEO Name, CEO Year Born.
-
-'''
-
-
 def first_task(codes, names):
     youngest = []
 
@@ -173,7 +165,7 @@ def first_task(codes, names):
         data = get_filtered_data_soup(codes[i], names[i])
         current_name = names[i]
         current_code = codes[i]
-        current_country = data["Country"]
+        current_country = data["Country"][0].split(',')[1]
         if not data["Country"]:
             current_country = "N/A"
         current_employees = data["Employees"]
@@ -230,12 +222,6 @@ def first_task(codes, names):
     print(result_pretty_table)
 
 
-'''
-2. 10 stocks with best 52-Week Change. 52-Week Change placed on Statistics tab.
-    Sheet's fields: Name, Code, 52-Week Change, Total Cash
-'''
-
-
 def second_task(codes, names):
     best_52 = []
     best_52_week_change = 0
@@ -276,14 +262,6 @@ def second_task(codes, names):
         result_pretty_table += row_format.format(*data) + "\n"
 
     print(result_pretty_table)
-
-
-'''
-3. 10 largest holds of Blackrock Inc. You can find related info on the Holders tab.
-    Blackrock Inc is an investment management corporation.
-    Sheet's fields: Name, Code, Shares, Date Reported, % Out, Value.
-    All fields except first two should be taken from Holders tab.
-'''
 
 
 def third_task(codes, names):
