@@ -93,16 +93,19 @@ def get_filtered_data_soup(company: str, code: str):
     data = {"Name": [], "Code": [], "Country": [], "Employees": [], "CEO": [], "CEO Year Born": []}
     data["Code"].append(code)
     data["Name"].append(company)
+    print(company, "|", code)
 
     soup = get_soup(url_profile)
     country_divs = soup.find_all("div", {"class": "address svelte-wxp4ja"})
     if country_divs:
         last_country_div = country_divs[-1]
+        print("last country div", last_country_div)
         data["Country"].append(last_country_div.text.strip())
     dds = soup.find_all("dd")
     for dd in dds:
         strong_tag = dd.find("strong")
         if strong_tag:
+            print("employees:", strong_tag.text)
             data["Employees"].append(strong_tag.text)
 
     tables = soup.find_all("table", {"class": "svelte-mj92za"})
@@ -171,23 +174,42 @@ def first_task(codes, names):
         current_name = names[i]
         current_code = codes[i]
         current_country = data["Country"]
-        if not data["Country"][0]:
+        if not data["Country"]:
             current_country = "N/A"
-        current_employees = data["Employees"][0]
-        current_CEO_name = data["CEO"][0]
-        current_CEO_year_born = data["CEO Year Born"][0]
+        current_employees = data["Employees"]
+        if not data["Employees"]:
+            current_employees = "N/A"
+        current_CEO_name = data["CEO"]
+        if not data["CEO"]:
+            current_CEO_name = "N/A"
+        current_CEO_year_born = data["CEO Year Born"]
+        if not data["CEO Year Born"]:
+            current_CEO_year_born = "N/A"
+
         current_youngest_CEO = 0
 
+        crt_ceo_year = 0
+
         for y in range(1, len(current_CEO_name)):
-            if current_CEO_year_born[y] != '-- ' and int(current_CEO_year_born[y]) > current_youngest_CEO:
+
+            try:
+                current_CEO_year_born[0] = int(current_CEO_year_born[0])
+                crt_ceo_year = int(current_CEO_year_born[0])
+
+            except ValueError:
+                print("didnt have year")
+                continue
+
+            if crt_ceo_year > current_youngest_CEO:
                 youngest_name = str(current_CEO_name[y])
-                current_youngest_CEO = int(current_CEO_year_born[y])
+                current_youngest_CEO = crt_ceo_year
 
         youngest.append(
-            [current_youngest_CEO, youngest_name, current_name, current_code, current_country, current_employees])
+            [current_name, current_code, current_country, current_employees, youngest_name, current_youngest_CEO])
 
-    header = ["Name", "Code", "Employees", "CEO Name", "CEO Year Born"]
+    header = ["Name", "Code", "Country", "Employees", "CEO Name", "CEO Year Born"]
 
+    youngest.sort(key=lambda x: x[5])
 
     max_lengths = [len(h) for h in header]
 
@@ -195,22 +217,19 @@ def first_task(codes, names):
         for i, item in enumerate(row):
             max_lengths[i] = max(max_lengths[i], len(str(item)))
 
-
     row_format = "| " + " | ".join([f"{{:<{max_length}}}" for max_length in max_lengths]) + " |"
 
     table_width = sum(max_lengths) + len(max_lengths) * 3 + 1
-    title = "5 stocks with most youngest CEOs"
+    title = "5 stocks with the youngest CEOs"
     result_pretty_table = f"{'=' * ((table_width - len(title) - 2) // 2)} {title} {'=' * ((table_width - len(title) - 2) // 2)}\n"
     result_pretty_table += row_format.format(*header) + "\n"
     result_pretty_table += "=" * table_width + "\n"
 
-
     for data in reversed(youngest[-5:]):
-        result_pretty_table += row_format.format(*data) + "\n"
 
+        result_pretty_table += row_format.format(*map(str, data)) + "\n"
 
     print(result_pretty_table)
-
 
 
 '''
@@ -237,15 +256,15 @@ def second_task(codes, names):
 
         best_52.append([current_name, current_code, current_52_week_change, current_total_cash])
 
-    header = ["Name", "Code", "52-week Change", "Total Cash"]
+    best_52.sort(key=lambda x: x[2])
 
+    header = ["Name", "Code", "52-week Change", "Total Cash"]
 
     max_lengths = [len(h) for h in header]
 
     for row in best_52:
         for i, item in enumerate(row):
             max_lengths[i] = max(max_lengths[i], len(str(item)))
-
 
     row_format = "| " + " | ".join([f"{{:<{max_length}}}" for max_length in max_lengths]) + " |"
 
@@ -262,16 +281,12 @@ def second_task(codes, names):
 
     print(result_pretty_table)
 
-
-
-
 '''
 3. 10 largest holds of Blackrock Inc. You can find related info on the Holders tab.
     Blackrock Inc is an investment management corporation.
     Sheet's fields: Name, Code, Shares, Date Reported, % Out, Value.
     All fields except first two should be taken from Holders tab.
 '''
-
 
 def third_task(codes, names):
     biggest_blackrock = []
@@ -294,7 +309,7 @@ def third_task(codes, names):
 
     header = ["Name", "Code", "Shares", "Date Reported", "% Out", "Value"]
 
-
+    biggest_blackrock.sort(key=lambda x: x[2])
     max_lengths = [len(h) for h in header]
 
     for row in biggest_blackrock:
