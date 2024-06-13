@@ -32,7 +32,7 @@ def read_fib_from_file(file_path):
         if os.path.splitext(os.path.basename(file_path))[0] != 'result':
             ordinal = int(os.path.splitext(os.path.basename(file_path))[0])
             return (ordinal, fib_value)
-    return None  # Handle files that should not be processed
+    return None
 
 def func2(result_file: str):
     file_paths = [os.path.join(OUTPUT_DIR, fname) for fname in os.listdir(OUTPUT_DIR) if fname.endswith('.csv')]
@@ -40,7 +40,6 @@ def func2(result_file: str):
     with Pool() as pool:
         fib_values = list(pool.map(read_fib_from_file, file_paths))
 
-    # Filter out None values
     fib_values = [fv for fv in fib_values if fv is not None]
 
     with open(result_file, 'w', newline='') as csvfile:
