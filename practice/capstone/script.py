@@ -1,4 +1,5 @@
 import argparse
+import string
 import sys
 from math import ceil
 
@@ -12,6 +13,10 @@ import random
 import threading
 from configparser import ConfigParser
 import ast
+
+
+RAND_TABLE = ['A', 'B', 'C', 'D']
+
 
 class JsonSchemaException(Exception):
     pass
@@ -133,12 +138,26 @@ def thread_task(schema_str, pathfile, files_count, file_name, data_lines, file_p
 
 
 def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
-    index = 1
-    filename = os.path.join(pathfile, f"{file_name}_{file_prefix}.{extension}")
-    while os.path.exists(filename):
-        filename = os.path.join(pathfile, f"{file_name}_{file_prefix}({index}).{extension}")
-        index += 1
-    return filename
+    if file_prefix == "count":
+        index = 1
+        filename = os.path.join(pathfile, f"{file_name}_({index}).{extension}")
+        while os.path.exists(filename):
+            filename = os.path.join(pathfile, f"{file_name}_({index}).{extension}")
+            index += 1
+        return filename
+    elif file_prefix == "uuid":
+        filename = os.path.join(pathfile, f"{file_name}_({uuid.uuid4()}).{extension}")
+        while os.path.exists(filename):
+            filename = os.path.join(pathfile, f"{file_name}_({uuid.uuid4()}).{extension}")
+        return filename
+    elif file_prefix == "random":
+        filename = os.path.join(pathfile, f"{file_name}_({''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))}).{extension}")
+        while os.path.exists(filename):
+            filename = os.path.join(pathfile, f"{file_name}_({''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))}).{extension}")
+        return filename
+    else:
+        print("Wrong file_prefix")
+        sys.exit(1)
 
 
 def process_schema(schema_str, pathfile , files_count, file_name, data_lines, file_prefix, thread_index, lock):
@@ -150,7 +169,10 @@ def process_schema(schema_str, pathfile , files_count, file_name, data_lines, fi
         print("Schema loaded from file and validated.")
         with lock:
             for _ in range(0, files_count):
-                filename = get_unique_filename(pathfile, file_name, file_prefix)
+                if files_count <= 1:
+                    filename = os.path.join(pathfile, f"{file_name}.json")
+                else:
+                    filename = get_unique_filename(pathfile, file_name, file_prefix)
                 with open(filename, 'w') as file:
                     for _ in range(data_lines):
                         file.write(str(parse_schema(schema_str,2)))
@@ -160,7 +182,10 @@ def process_schema(schema_str, pathfile , files_count, file_name, data_lines, fi
         print("Schema string validated.")
         with lock:
             for _ in range(0,files_count):
-                filename = get_unique_filename(pathfile, file_name, file_prefix)
+                if files_count <= 1:
+                    filename = os.path.join(pathfile, f"{file_name}.json")
+                else:
+                    filename = get_unique_filename(pathfile, file_name, file_prefix)
                 #print(filename)
                 with open(filename, 'w') as file:
                     for _ in range(data_lines):
