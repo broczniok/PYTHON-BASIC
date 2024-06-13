@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import string
 import sys
@@ -15,15 +16,6 @@ from configparser import ConfigParser
 import ast
 
 
-RAND_TABLE = ['A', 'B', 'C', 'D']
-
-
-class JsonSchemaException(Exception):
-    pass
-
-class ThreadingException(Exception):
-    pass
-
 def fill_parser(config, args):
     result = {
         "pathfile": [args.path_to_save_files],
@@ -38,7 +30,6 @@ def fill_parser(config, args):
 
 
 def get_parser():
-
     config = ConfigParser()
     try:
         config.read("default.ini")
@@ -46,15 +37,23 @@ def get_parser():
         print("default.ini file reading went wrong")
         sys.exit(1)
 
-    parser = argparse.ArgumentParser(prog="magicgenerator", description="Capstone Project function that generates fake JSON files from command line.")
-    parser.add_argument('--path_to_save_files', metavar="pathfile",required=True, help="Where all files need to be saved", type=str)
-    parser.add_argument('--files_count', metavar="file_count",  help="How much json files to generate", type=int)
-    parser.add_argument('--file_name', metavar="file_name", help="What should the files be named (base: file_name)", type=str)
-    parser.add_argument('--file_prefix', choices=["count","random","uuid"], help="What prefix for file name to use if there is more than 1 file to generate", type=str)
-    parser.add_argument('--data_schema', metavar="data_schema", required=True, help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line", type=str)
+    parser = argparse.ArgumentParser(prog="magicgenerator",
+                                     description="Capstone Project function that generates fake JSON files from command line.")
+    parser.add_argument('--path_to_save_files', metavar="pathfile", required=True,
+                        help="Where all files need to be saved", type=str)
+    parser.add_argument('--files_count', metavar="file_count", help="How much json files to generate", type=int)
+    parser.add_argument('--file_name', metavar="file_name", help="What should the files be named (base: file_name)",
+                        type=str)
+    parser.add_argument('--file_prefix', choices=["count", "random", "uuid"],
+                        help="What prefix for file name to use if there is more than 1 file to generate", type=str)
+    parser.add_argument('--data_schema', metavar="data_schema", required=True,
+                        help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line",
+                        type=str)
     parser.add_argument('--data_lines', metavar="data_lines", help="Count of lines for each file (base=1000)", type=int)
-    parser.add_argument('--clear_path', action="store_true", help="Use if you want to overwrite all other files with same name in chosen directory")
-    parser.add_argument('--multiprocessing', metavar="multiprocessing", help="The number of processes used to create files (base=1)", type=int)
+    parser.add_argument('--clear_path', action="store_true",
+                        help="Use if you want to overwrite all other files with same name in chosen directory")
+    parser.add_argument('--multiprocessing', metavar="multiprocessing",
+                        help="The number of processes used to create files (base=1)", type=int)
 
     args = parser.parse_args()
 
@@ -63,17 +62,42 @@ def get_parser():
     #print("pathfile:",arguments["pathfile"][0])
     #print("files count:",arguments["files_count"][0])
     #print("file name:",arguments["file_name"][0])
-    print("data schema:", str(arguments["data_schema"][0]), type(arguments["data_schema"][0]))
+    #print("data schema:", str(arguments["data_schema"][0]), type(arguments["data_schema"][0]))
     #print("data lines:",arguments["data_lines"][0])
     #print("file prefix", arguments["file_prefix"][0])
     #print("multiprocessing", arguments["multiprocessing"][0])
 
     #schema_str = args.data_schema
+    if os.path.exists(arguments["pathfile"][0]) and os.path.isfile(arguments["pathfile"][0]):
+        print("Used path is for file not directory")
+        sys.exit(1)
+
+    if arguments["multiprocessing"][0] < 0:
+        print("Invalid multiprocessing count.")
+        sys.exit(1)
+
+    if arguments["files_count"][0] < 0:
+        print("Invalid files count.")
+        sys.exit(1)
+
+    if validate_schema(str(arguments["data_schema"][0])) == 0:
+        print("Invalid schema")
+        sys.exit(1)
+    elif validate_schema(str(arguments["data_schema"][0])) == 1:
+        print("Schema string validated")
+    elif validate_schema(str(arguments["data_schema"][0])) == 2:
+        print("Schema from file validated")
+
+    if arguments["pathfile"][0] == '.``':
+        arguments["pathfile"][0] = str(os.getcwd())
 
     if not os.path.exists(arguments["pathfile"][0]):
         os.makedirs(arguments["pathfile"][0])
         os.chmod(arguments["pathfile"][0], 0o777)
 
+    if arguments["files_count"][0] == 0:
+        print(parse_schema(str(arguments["data_schema"][0]),2))
+        sys.exit(0)
 
     if args.clear_path:
         for filename in os.listdir(arguments["pathfile"][0]):
@@ -84,18 +108,13 @@ def get_parser():
 
         print("Files deleted")
 
-
-    if arguments["multiprocessing"][0] < 0:
-        print("Invalid multiprocessing count.")
-        return
-
     if arguments["multiprocessing"][0] > os.cpu_count():
         arguments["multiprocessing"][0] = os.cpu_count()
 
     schema_validation_result = validate_schema(str(arguments["data_schema"][0]))
     if schema_validation_result == 0:
         print("Invalid schema")
-        return
+        sys.exit(1)
     else:
         lock = threading.Lock()
         threads = []
@@ -103,7 +122,6 @@ def get_parser():
             arguments["multiprocessing"] = arguments["files_count"]
 
         for i in range(arguments["multiprocessing"][0]):
-
             thread = threading.Thread(target=thread_task, args=(
                 arguments["data_schema"][0],
                 arguments["pathfile"][0],
@@ -127,14 +145,14 @@ def get_parser():
 #  python3 script.py --path_to_save_files="./files" --data_schema="{\"date\": \"timestamp:\",\"name\": \"str:rand\",\"type\": \"['client', 'partner', 'government']\",\"age\": \"int:rand(1, 90)\"}" --multiprocessing=5 --files_count=3
 #  python3 script.py --path_to_save_files="./files" --data_schema="json_file.json" --multiprocessing=5 --files_count=3
 
-def thread_task(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, total_threads, lock):
-
+def thread_task(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, total_threads,
+                lock):
     files_per_thread = ceil(files_count / total_threads)
     start_index = thread_index * files_per_thread
     end_index = min(start_index + files_per_thread, files_count)
 
-    process_schema(schema_str, pathfile, end_index - start_index, file_name, data_lines, file_prefix, thread_index, lock)
-
+    process_schema(schema_str, pathfile, end_index - start_index, file_name, data_lines, file_prefix, thread_index,
+                   lock)
 
 
 def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
@@ -151,49 +169,34 @@ def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
             filename = os.path.join(pathfile, f"{file_name}_({uuid.uuid4()}).{extension}")
         return filename
     elif file_prefix == "random":
-        filename = os.path.join(pathfile, f"{file_name}_({''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))}).{extension}")
+        filename = os.path.join(pathfile,
+                                f"{file_name}_({''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))}).{extension}")
         while os.path.exists(filename):
-            filename = os.path.join(pathfile, f"{file_name}_({''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))}).{extension}")
+            filename = os.path.join(pathfile,
+                                    f"{file_name}_({''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))}).{extension}")
         return filename
     else:
         print("Wrong file_prefix")
         sys.exit(1)
 
 
-def process_schema(schema_str, pathfile , files_count, file_name, data_lines, file_prefix, thread_index, lock):
-
-    if validate_schema(schema_str) == 0:
-        print("Invalid schema")
-        return
-    elif validate_schema(schema_str) == 2: # Schema is from file
-        print("Schema loaded from file and validated.")
+def process_schema(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, lock):
+    if validate_schema(schema_str) == 2:  # Schema is from file
         with lock:
             for _ in range(0, files_count):
-                if files_count <= 1:
-                    filename = os.path.join(pathfile, f"{file_name}.json")
-                else:
-                    filename = get_unique_filename(pathfile, file_name, file_prefix)
+                filename = get_unique_filename(pathfile, file_name, file_prefix)
                 with open(filename, 'w') as file:
                     for _ in range(data_lines):
-                        file.write(str(parse_schema(schema_str,2)))
+                        file.write(str(parse_schema(schema_str, 2)))
                         file.write("\n")
-
-    elif validate_schema(schema_str) == 1: # Schema is from string
-        print("Schema string validated.")
+    elif validate_schema(schema_str) == 1:  # Schema is from string
         with lock:
-            for _ in range(0,files_count):
-                if files_count <= 1:
-                    filename = os.path.join(pathfile, f"{file_name}.json")
-                else:
-                    filename = get_unique_filename(pathfile, file_name, file_prefix)
-                #print(filename)
+            for _ in range(0, files_count):
+                filename = get_unique_filename(pathfile, file_name, file_prefix)
                 with open(filename, 'w') as file:
                     for _ in range(data_lines):
-                        file.write((str(parse_schema(schema_str,1))))
+                        file.write((str(parse_schema(schema_str, 1))))
                         file.write("\n")
-
-        #print(parse_schema(schema_str, 1))
-        #print("^^^^ above from string ^^^^^")
 
 
 def parse_schema(schema_str, type):
@@ -222,11 +225,13 @@ def parse_schema(schema_str, type):
             elif type_hint == "int":
                 data[key] = generate_int_value(generation_rule)
             else:
-                raise ValueError(f"Unsupported type '{type_hint}' for key '{key}'")
+                print(f"Unsupported type '{type_hint}' for key '{key}'")
+                sys.exit(1)
         else:
             data[key] = random.choice(ast.literal_eval(value))
 
     return data
+
 
 def generate_str_value(rule):
     if rule == "rand":
@@ -238,6 +243,7 @@ def generate_str_value(rule):
     else:
         return rule
 
+
 def generate_int_value(rule):
     if rule == "rand":
         return random.randint(0, 10000)
@@ -247,7 +253,8 @@ def generate_int_value(rule):
             start, end = map(int, range_str.split(","))
             return random.randint(start, end)
         except ValueError:
-            raise ValueError(f"Invalid range format in rule '{rule}'")
+            print(f"Invalid range format in rule '{rule}'")
+            sys.exit(1)
     elif rule.startswith("[") and rule.endswith("]"):
         rule = rule.replace("'", "\"")
         values = json.loads(rule)
@@ -258,9 +265,8 @@ def generate_int_value(rule):
         try:
             return int(rule)
         except ValueError:
-            raise ValueError(f"Cannot convert '{rule}' to int")
-
-
+            print("Cannot generate integer values")
+            sys.exit(1)
 
 
 def validate_schema(schema_str):
@@ -268,18 +274,18 @@ def validate_schema(schema_str):
         try:
             with open(schema_str, "r") as f:
                 schema = json.load(f)
-
-                if isinstance(schema, dict) and 'type' in schema and schema['type'] == ['client', 'partner', 'government']:
+                if isinstance(schema, dict) and 'type' in schema and schema['type'] == ['client', 'partner',
+                                                                                        'government']:
                     schema['type'] = ["string", "array"]
                     schema['items'] = {"type": "string"}
                     schema['minItems'] = 1
                     schema['uniqueItems'] = True
                 jsonschema.Draft7Validator.check_schema(schema)
-                #print("Done")
             return 2
         except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
+
             print(f"Invalid schema in file: {e}")
-            return 0, None
+            sys.exit(1)
     else:
         try:
             schema = json.loads(schema_str)
@@ -293,8 +299,7 @@ def validate_schema(schema_str):
             return 1
         except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
             print(f"Invalid schema string: {e}")
-            return 0
-
+            sys.exit(1)
 
 
 get_parser()
