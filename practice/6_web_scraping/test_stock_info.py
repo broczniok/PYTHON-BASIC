@@ -24,7 +24,7 @@ class TestFunctions(unittest.TestCase):
         mock_get.return_value = mock
 
         result = make_request('https://www.google.com/')
-        self.assertIsNone(result)
+        self.assertIsNone(result[1])
 
     @patch('stock_info.make_request')
     def test_get_soup(self, mock_make_request):
