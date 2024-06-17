@@ -3,7 +3,6 @@ import argparse
 import string
 import sys
 from math import ceil
-
 import jsonschema
 import uuid
 import time
@@ -35,7 +34,7 @@ def get_parser(args=None):
         config.read("default.ini")
     except:
         print("default.ini file reading went wrong")
-        sys.exit(1)
+        exit(1)
 
     parser = argparse.ArgumentParser(prog="magicgenerator",
                                      description="Capstone Project function that generates fake JSON files from command line.")
@@ -64,30 +63,21 @@ def get_parser(args=None):
 
     arguments = fill_parser(config, args)
 
-    #print("pathfile:",arguments["pathfile"][0])
-    #print("files count:",arguments["files_count"][0])
-    #print("file name:",arguments["file_name"][0])
-    #print("data schema:", str(arguments["data_schema"][0]), type(arguments["data_schema"][0]))
-    #print("data lines:",arguments["data_lines"][0])
-    #print("file prefix", arguments["file_prefix"][0])
-    #print("multiprocessing", arguments["multiprocessing"][0])
-
-    #schema_str = args.data_schema
     if os.path.exists(arguments["pathfile"][0]) and os.path.isfile(arguments["pathfile"][0]):
         print("Used path is for file not directory")
-        sys.exit(1)
+        exit(1)
 
     if arguments["multiprocessing"][0] < 0:
         print("Invalid multiprocessing count.")
-        sys.exit(1)
+        exit(1)
 
     if arguments["files_count"][0] < 0:
         print("Invalid files count.")
-        sys.exit(1)
+        exit(1)
 
     if validate_schema(str(arguments["data_schema"][0])) == 0:
         print("Invalid schema")
-        sys.exit(1)
+        exit(1)
     elif validate_schema(str(arguments["data_schema"][0])) == 1:
         print("Schema string validated")
     elif validate_schema(str(arguments["data_schema"][0])) == 2:
@@ -119,7 +109,7 @@ def get_parser(args=None):
     schema_validation_result = validate_schema(str(arguments["data_schema"][0]))
     if schema_validation_result == 0:
         print("Invalid schema")
-        sys.exit(1)
+        exit(1)
     else:
         lock = threading.Lock()
         threads = []
@@ -147,8 +137,6 @@ def get_parser(args=None):
                 print(f"Thread {thread.name} did not complete in time and will be terminated.")
 
 
-#  python3 script.py --path_to_save_files="./files" --data_schema="{\"date\": \"timestamp:\",\"name\": \"str:rand\",\"type\": \"['client', 'partner', 'government']\",\"age\": \"int:rand(1, 90)\"}" --multiprocessing=5 --files_count=3
-#  python3 script.py --path_to_save_files="./files" --data_schema="json_file.json" --multiprocessing=5 --files_count=3
 
 def thread_task(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, total_threads,
                 lock):
@@ -182,7 +170,7 @@ def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
         return filename
     else:
         print("Wrong file_prefix")
-        sys.exit(1)
+        exit(1)
 
 
 def process_schema(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, lock):
@@ -200,8 +188,12 @@ def process_schema(schema_str, pathfile, files_count, file_name, data_lines, fil
                 filename = get_unique_filename(pathfile, file_name, file_prefix)
                 with open(filename, 'w') as file:
                     for _ in range(data_lines):
-                        file.write((str(parse_schema(schema_str, 1))))
-                        file.write("\n")
+                        try:
+                            file.write((str(parse_schema(schema_str, 1))))
+                            file.write("\n")
+                        except ValueError:
+                            print("Wrongly rand inserted")
+                            exit(1)
 
 
 def parse_schema(schema_str, type):
@@ -212,7 +204,7 @@ def parse_schema(schema_str, type):
     elif type == 1:
         schema = json.loads(schema_str)
     else:
-        sys.exit(1)
+        exit(1)
 
     data = {}
 
@@ -226,12 +218,12 @@ def parse_schema(schema_str, type):
                     logging.warning(f"Timestamp type does not support any values. Value for '{key}' will be ignored.")
                 data[key] = int(time.time())
             elif type_hint == "str":
-                data[key] = generate_str_value(generation_rule)
-            elif type_hint == "int":
                 data[key] = generate_int_value(generation_rule)
+            elif type_hint == "int":
+                data[key] = generate_str_value(generation_rule)
             else:
                 print(f"Unsupported type '{type_hint}' for key '{key}'")
-                sys.exit(1)
+                exit(1)
         else:
             data[key] = random.choice(ast.literal_eval(value))
 
@@ -259,7 +251,7 @@ def generate_int_value(rule):
             return random.randint(start, end)
         except ValueError:
             print(f"Invalid range format in rule '{rule}'")
-            sys.exit(1)
+            exit(1)
     elif rule.startswith("[") and rule.endswith("]"):
         rule = rule.replace("'", "\"")
         values = json.loads(rule)
@@ -271,11 +263,11 @@ def generate_int_value(rule):
             return int(rule)
         except ValueError:
             print("Cannot generate integer values")
-            sys.exit(1)
+            exit(1)
 
 
 def validate_schema(schema_str):
-    if os.path.exists(schema_str):
+    if schema_str.endswith(".json") and os.path.exists(schema_str):
         try:
             with open(schema_str, "r") as f:
                 schema = json.load(f)
@@ -287,9 +279,8 @@ def validate_schema(schema_str):
                 jsonschema.Draft7Validator.check_schema(schema)
             return 2
         except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
-
             print(f"Invalid schema in file: {e}")
-            sys.exit(1)
+            exit(1)
     else:
         try:
             schema = json.loads(schema_str)
@@ -303,9 +294,8 @@ def validate_schema(schema_str):
             return 1
         except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
             print(f"Invalid schema string: {e}")
-            sys.exit(1)
+            exit(1)
+
 
 if __name__ == "__main__":
     get_parser()
-
-#schema_str = "{\"date\": \"timestamp:\",\"name\": \"str:rand\",\"type\": \"['client', 'partner', 'government']\",\"age\": \"int:rand(1, 90)\"}"
