@@ -29,7 +29,7 @@ def fill_parser(config, args):
     return result
 
 
-def get_parser():
+def get_parser(args=None):
     config = ConfigParser()
     try:
         config.read("default.ini")
@@ -54,6 +54,11 @@ def get_parser():
                         help="Use if you want to overwrite all other files with same name in chosen directory")
     parser.add_argument('--multiprocessing', metavar="multiprocessing",
                         help="The number of processes used to create files (base=1)", type=int)
+
+    if args:
+        parser.parse_args(args)
+    else:
+        parser.parse_args()
 
     args = parser.parse_args()
 
@@ -274,8 +279,7 @@ def validate_schema(schema_str):
         try:
             with open(schema_str, "r") as f:
                 schema = json.load(f)
-                if isinstance(schema, dict) and 'type' in schema and schema['type'] == ['client', 'partner',
-                                                                                        'government']:
+                if isinstance(schema, dict) and 'type' in schema and isinstance(schema['type'],list):
                     schema['type'] = ["string", "array"]
                     schema['items'] = {"type": "string"}
                     schema['minItems'] = 1
@@ -301,7 +305,7 @@ def validate_schema(schema_str):
             print(f"Invalid schema string: {e}")
             sys.exit(1)
 
+if __name__ == "__main__":
+    get_parser()
 
-get_parser()
-
-schema_str = "{\"date\": \"timestamp:\",\"name\": \"str:rand\",\"type\": \"['client', 'partner', 'government']\",\"age\": \"int:rand(1, 90)\"}"
+#schema_str = "{\"date\": \"timestamp:\",\"name\": \"str:rand\",\"type\": \"['client', 'partner', 'government']\",\"age\": \"int:rand(1, 90)\"}"
