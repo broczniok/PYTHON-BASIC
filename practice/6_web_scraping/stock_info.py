@@ -128,13 +128,13 @@ def get_filtered_data_soup(company: str, code: str):
 
     tables = soup.find_all("table", {"class": "svelte-mj92za"})
     for table in tables:
-        tds = table.find_all("td")
+        tds_fd = table.find_all("td")
         ceo_name_index = None
-    for i, td in enumerate(tds):
+    for i, td in enumerate(tds_fd):
         text = td.text.strip().lower()
         if 'ceo' in text:
             ceo_name_index = i - 1
-            data["CEO"].append(tds[ceo_name_index].text.strip())
+            data["CEO"].append(tds_fd[ceo_name_index].text.strip())
         elif ceo_name_index is not None and i == ceo_name_index + 4:
             data["CEO Year Born"].append(td.text.strip())
             ceo_name_index = None
@@ -175,7 +175,6 @@ def get_blackrock():
         tds = tr.find_all("td")
         if len(tds) >= 5:
             data["Name"].append(tds[0].text.strip())
-            print("Name: ", tds[0].text.strip())
             data["Shares"].append(tds[1].text.strip())
             data["Date Reported"].append(tds[2].text.strip())
             data["% Out"].append(tds[3].text.strip())
@@ -207,7 +206,10 @@ def first_task(codes, names):
 
         current_name = names[i]
         current_code = codes[i]
-        current_country = get_substring_after_last_digit(data["Country"][0].split(',')[1]) if data["Country"] else "N/A"
+        try:
+            current_country = get_substring_after_last_digit(data["Country"][0].split(',')[1]) if data["Country"] else "N/A"
+        except IndexError:
+            continue
         current_employees = data["Employees"] if data["Employees"] else "N/A"
         current_CEO_name = data["CEO"] if data["CEO"] else ["N/A"]
         current_CEO_year_born = data["CEO Year Born"] if data["CEO Year Born"] else ["N/A"]
@@ -287,8 +289,8 @@ def print_pretty_table(table, rows, header, title):
 def third_task():
     biggest_blackrock = []
 
+    data = get_blackrock()
     for i in range(0, 11):
-        data = get_blackrock()
         if data is None:
             continue
         if not data["Shares"]:
