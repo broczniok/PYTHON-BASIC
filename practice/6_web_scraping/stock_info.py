@@ -184,52 +184,55 @@ def get_blackrock():
     return data
 
 
+def get_substring_after_last_digit(s):
+    last_digit_index = -1
+    for i, char in enumerate(s):
+        if char.isdigit():
+            last_digit_index = i
+
+    if last_digit_index != -1:
+        return s[last_digit_index + 1:].strip()
+    else:
+
+        return s
+
+
 def first_task(codes, names):
     youngest = []
 
-    youngest_name = ''
-    for i in range(0, len(codes)):
+    for i in range(len(codes)):
         data = get_filtered_data_soup(codes[i], names[i])
         if data is None:
             continue
+
         current_name = names[i]
         current_code = codes[i]
-        current_country = data["Country"][0].split(',')[1]
-        if not data["Country"]:
-            current_country = "N/A"
-        current_employees = data["Employees"]
-        if not data["Employees"]:
-            current_employees = "N/A"
-        current_CEO_name = data["CEO"]
-        if not data["CEO"]:
-            current_CEO_name = "N/A"
-        current_CEO_year_born = data["CEO Year Born"]
-        if not data["CEO Year Born"]:
-            current_CEO_year_born = "N/A"
+        current_country = get_substring_after_last_digit(data["Country"][0].split(',')[1]) if data["Country"] else "N/A"
+        current_employees = data["Employees"] if data["Employees"] else "N/A"
+        current_CEO_name = data["CEO"] if data["CEO"] else ["N/A"]
+        current_CEO_year_born = data["CEO Year Born"] if data["CEO Year Born"] else ["N/A"]
 
-        current_youngest_CEO = 0
+        youngest_CEO_year = float('inf')
+        youngest_CEO_name = "N/A"
 
-        crt_ceo_year = 0
-
-        for y in range(1, len(current_CEO_name)):
-
+        for j in range(len(current_CEO_name)):
             try:
-                current_CEO_year_born[0] = int(current_CEO_year_born[0])
-                crt_ceo_year = int(current_CEO_year_born[0])
-
-            except ValueError:
+                ceo_year = int(current_CEO_year_born[j])
+            except (ValueError, IndexError):
                 continue
 
-            if crt_ceo_year > current_youngest_CEO:
-                youngest_name = str(current_CEO_name[y])
-                current_youngest_CEO = crt_ceo_year
+            if ceo_year < youngest_CEO_year:
+                youngest_CEO_year = ceo_year
+                youngest_CEO_name = current_CEO_name[j]
 
-        youngest.append(
-            [current_name, current_code, current_country, current_employees, youngest_name, current_youngest_CEO])
+        youngest.append([
+            current_name, current_code, current_country,
+            current_employees, youngest_CEO_name,
+            youngest_CEO_year if youngest_CEO_year != float('inf') else 1000
+        ])
 
     header = ["Name", "Code", "Country", "Employees", "CEO Name", "CEO Year Born"]
-
-    youngest.sort(key=lambda x: x[5])
+    youngest.sort(key=lambda x: (x[5] if isinstance(x[5], int) else float('inf')))
 
     print_pretty_table(youngest, 5, header, "5 stocks with most youngest CEOs")
 
@@ -262,9 +265,9 @@ def second_task(codes, names):
 
 
 def print_pretty_table(table, rows, header, title):
-    max_lengths = [len(h) for h in header]
+    max_lengths = [len(str(h)) for h in header]
 
-    for row in table:
+    for row in reversed(table[-rows:]):
         for i, item in enumerate(row):
             max_lengths[i] = max(max_lengths[i], len(str(item)))
 
@@ -276,7 +279,7 @@ def print_pretty_table(table, rows, header, title):
     result_pretty_table += "=" * table_width + "\n"
 
     for data in reversed(table[-rows:]):
-        result_pretty_table += row_format.format(*data) + "\n"
+        result_pretty_table += row_format.format(*[str(d) for d in data]) + "\n"
 
     print(result_pretty_table)
 
