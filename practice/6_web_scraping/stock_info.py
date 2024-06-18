@@ -290,7 +290,7 @@ def third_task():
     biggest_blackrock = []
 
     data = get_blackrock()
-    for i in range(0, 11):
+    for i in range(0, 10):
         if data is None:
             continue
         if not data["Shares"]:
