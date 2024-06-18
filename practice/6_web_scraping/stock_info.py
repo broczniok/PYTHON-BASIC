@@ -62,7 +62,7 @@ class BlockAll(cookiejar.CookiePolicy):
 
 
 def make_request(url: str) -> tuple[int, bytes]:
-    req = requests.get(url, headers={'User-Agent': random.choice(user_agent)}, timeout=5)
+    req = requests.get(url, headers={'User-Agent': random.choice(user_agent)}, timeout=10)
     if req.status_code == 200:
         return 200, req.content
     else:
@@ -210,11 +210,11 @@ def first_task(codes, names):
             current_country = get_substring_after_last_digit(data["Country"][0].split(',')[1]) if data["Country"] else "N/A"
         except IndexError:
             continue
-        current_employees = data["Employees"] if data["Employees"] else "N/A"
+        current_employees = data["Employees"][0] if data["Employees"] else "N/A"
         current_CEO_name = data["CEO"] if data["CEO"] else ["N/A"]
         current_CEO_year_born = data["CEO Year Born"] if data["CEO Year Born"] else ["N/A"]
 
-        youngest_CEO_year = float('inf')
+        youngest_CEO_year = 0
         youngest_CEO_name = "N/A"
 
         for j in range(len(current_CEO_name)):
@@ -223,14 +223,14 @@ def first_task(codes, names):
             except (ValueError, IndexError):
                 continue
 
-            if ceo_year < youngest_CEO_year:
+            if ceo_year > youngest_CEO_year:
                 youngest_CEO_year = ceo_year
                 youngest_CEO_name = current_CEO_name[j]
 
         youngest.append([
             current_name, current_code, current_country,
             current_employees, youngest_CEO_name,
-            youngest_CEO_year if youngest_CEO_year != float('inf') else 1000
+            youngest_CEO_year if youngest_CEO_year != 0 else 0
         ])
 
     header = ["Name", "Code", "Country", "Employees", "CEO Name", "CEO Year Born"]
