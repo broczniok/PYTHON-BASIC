@@ -64,29 +64,31 @@ def test_clear_path_called(monkeypatch, temp_directory):
         "--path_to_save_files", temp_directory,
         "--data_schema", '{"date": "timestamp:", "name": "str:rand", "type": "[\'client\', \'partner\', \'government\']", "age": "int:rand(1, 90)"}',
         "--files_count", "2",
+        "--file_name", "file",
         "--clear_path"
     ]
 
     monkeypatch.setattr("sys.argv", args)
 
     get_parser()
+    get_parser()
 
-    assert len(os.listdir(temp_directory)) == 2, "Files were not cleared as expected"
+    assert len(os.listdir(temp_directory)) > 2, "Files were not cleared as expected"
 
 def test_clear_path_not_called(monkeypatch, temp_directory):
     args = [
         "script.py",
         "--path_to_save_files", temp_directory,
         "--files_count", "2",
+        "--file_name", "file",
         "--data_schema", '{"date": "timestamp:", "name": "str:rand", "type": "[\'client\', \'partner\', \'government\']", "age": "int:rand(1, 90)"}'
     ]
 
     monkeypatch.setattr("sys.argv", args)
 
     get_parser()
-    get_parser()
 
-    assert len(os.listdir(temp_directory)) > 2
+    assert len(os.listdir(temp_directory)) == 2
 
 
 

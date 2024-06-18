@@ -28,7 +28,7 @@ def fill_parser(config, args):
     return result
 
 
-def get_parser(args=None):
+def get_parser():
     config = ConfigParser()
     try:
         config.read("default.ini")
@@ -41,7 +41,7 @@ def get_parser(args=None):
     parser.add_argument('--path_to_save_files', metavar="pathfile", required=True,
                         help="Where all files need to be saved", type=str)
     parser.add_argument('--files_count', metavar="file_count", help="How much json files to generate", type=int)
-    parser.add_argument('--file_name', metavar="file_name", help="What should the files be named (base: file_name)",
+    parser.add_argument('--file_name', metavar="file_name", required=True, help="What should the files be named",
                         type=str)
     parser.add_argument('--file_prefix', choices=["count", "random", "uuid"],
                         help="What prefix for file name to use if there is more than 1 file to generate", type=str)
@@ -49,31 +49,36 @@ def get_parser(args=None):
                         help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line",
                         type=str)
     parser.add_argument('--data_lines', metavar="data_lines", help="Count of lines for each file (base=1000)", type=int)
-    parser.add_argument('--clear_path', action="store_true",
+    parser.add_argument('--clear_path', action="store_false",
                         help="Use if you want to overwrite all other files with same name in chosen directory")
     parser.add_argument('--multiprocessing', metavar="multiprocessing",
                         help="The number of processes used to create files (base=1)", type=int)
-
-    if args:
-        parser.parse_args(args)
-    else:
-        parser.parse_args()
 
     args = parser.parse_args()
 
     arguments = fill_parser(config, args)
 
-    if os.path.exists(arguments["pathfile"][0]) and os.path.isfile(arguments["pathfile"][0]):
+    if os.path.isfile(arguments["pathfile"][0]):
         print("Used path is for file not directory")
         exit(1)
+    elif arguments["pathfile"][0] == '.``':
+        arguments["pathfile"][0] = str(os.getcwd())
+    elif not os.path.exists(arguments["pathfile"][0]):
+        os.makedirs(arguments["pathfile"][0])
+        os.chmod(arguments["pathfile"][0], 0o777)
 
     if arguments["multiprocessing"][0] < 0:
         print("Invalid multiprocessing count.")
         exit(1)
+    elif arguments["multiprocessing"][0] > os.cpu_count():
+        arguments["multiprocessing"][0] = os.cpu_count()
 
     if arguments["files_count"][0] < 0:
         print("Invalid files count.")
         exit(1)
+    elif arguments["files_count"][0] == 0: # Change it so it will instead be priting line = data_lines to console (do not write to file) and add multithreading to it
+        print(parse_schema(str(arguments["data_schema"][0]),2))
+        sys.exit(0)
 
     if validate_schema(str(arguments["data_schema"][0])) == 0:
         print("Invalid schema")
@@ -83,17 +88,6 @@ def get_parser(args=None):
     elif validate_schema(str(arguments["data_schema"][0])) == 2:
         print("Schema from file validated")
 
-    if arguments["pathfile"][0] == '.``':
-        arguments["pathfile"][0] = str(os.getcwd())
-
-    if not os.path.exists(arguments["pathfile"][0]):
-        os.makedirs(arguments["pathfile"][0])
-        os.chmod(arguments["pathfile"][0], 0o777)
-
-    if arguments["files_count"][0] == 0:
-        print(parse_schema(str(arguments["data_schema"][0]),2))
-        sys.exit(0)
-
     if args.clear_path:
         for filename in os.listdir(arguments["pathfile"][0]):
             if arguments["file_name"][0] in filename:
@@ -102,9 +96,6 @@ def get_parser(args=None):
                     os.remove(file_to_delete)
 
         print("Files deleted")
-
-    if arguments["multiprocessing"][0] > os.cpu_count():
-        arguments["multiprocessing"][0] = os.cpu_count()
 
     schema_validation_result = validate_schema(str(arguments["data_schema"][0]))
     if schema_validation_result == 0:
