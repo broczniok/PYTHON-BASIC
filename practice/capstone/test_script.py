@@ -4,7 +4,7 @@ import tempfile
 import threading
 import json
 import shutil
-from script import validate_schema, process_schema, get_parser, generate_int_value, generate_str_value
+from script import validate_schema, process_schema, get_parser, generate_int_value, generate_str_value, process_schema_item
 
 
 @pytest.fixture
@@ -110,6 +110,40 @@ def test_multiprocessing_file_creation(temp_directory):
     process_schema(schema_str, temp_directory, 3, "testfile", 10, "count", 0, threading.Lock(),1)
     assert len(os.listdir(temp_directory)) == 3
 
+
+def test_timestamp():
+    key, value = process_schema_item("date", "timestamp:")
+    assert key == "date"
+    assert isinstance(value, int)
+
+
+def test_str_value():
+    key, value = process_schema_item("name", "str:John Doe")
+    assert key == "name"
+    assert value == "John Doe"
+
+
+def test_int_value():
+    with pytest.raises(SystemExit) as er:
+        key, value = process_schema_item("age", "int:20-30")
+        assert key == "age"
+        assert er.value.code == 1
+
+def test_wrong_expression_timestamp():
+    with pytest.raises(SystemExit):
+        process_schema_item("date", "timestamp:rand(5)")
+
+def test_wrong_expression_str():
+    with pytest.raises(SystemExit):
+        process_schema_item("name", "str:rand(5)")
+
+def test_wrong_data_type():
+    with pytest.raises(SystemExit):
+        process_schema_item("unknown", "unknown:random")
+
+def test_missing_colon():
+    with pytest.raises(SystemExit):
+        process_schema_item("name", "John Doe")
 
 if __name__ == "__main__":
     pytest.main()
