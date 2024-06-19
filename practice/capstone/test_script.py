@@ -67,7 +67,7 @@ def test_clear_path_called(monkeypatch, temp_directory):
     args = [
         "script.py",
         "--path_to_save_files", temp_directory,
-        "--data_schema", '{"date": "timestamp:", "name": "str:rand", "type": "[\'client\', \'partner\', \'government\']", "age": "int:rand(1, 90)"}',
+        "--data_schema", '{"date": "timestamp:", "name": "str:rand", "type": "str:[\'client\', \'partner\', \'government\']", "age": "int:rand(1, 90)"}',
         "--files_count", "2",
         "--file_name", "file",
         "--clear_path"
@@ -87,7 +87,7 @@ def test_clear_path_not_called(monkeypatch, temp_directory):
         "--path_to_save_files", temp_directory,
         "--files_count", "2",
         "--file_name", "file",
-        "--data_schema", '{"date": "timestamp:", "name": "str:rand", "type": "[\'client\', \'partner\', \'government\']", "age": "int:rand(1, 90)"}'
+        "--data_schema", '{"date": "timestamp:", "name": "str:rand", "type": "str:[\'client\', \'partner\', \'government\']", "age": "int:rand(1, 90)"}'
     ]
 
     monkeypatch.setattr("sys.argv", args)
@@ -114,7 +114,7 @@ def test_multiprocessing_file_creation(temp_directory):
 def test_timestamp():
     key, value = process_schema_item("date", "timestamp:")
     assert key == "date"
-    assert isinstance(value, int)
+    assert isinstance(value, float)
 
 
 def test_str_value():

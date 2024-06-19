@@ -20,7 +20,7 @@ def fill_parser(config, args):
     result = {
         "pathfile": [args.path_to_save_files],
         "files_count": [args.files_count or int(config["DEFAULT"]["files_count"])],
-        "file_name": [args.file_name or str(config["DEFAULT"]["file_name"])],
+        "file_name": [args.file_name],
         "data_schema": [args.data_schema],
         "data_lines": [args.data_lines or int(config["DEFAULT"]["data_lines"])],
         "file_prefix": [args.file_prefix or str(config["DEFAULT"]["file_prefix"])],
@@ -183,9 +183,6 @@ def create_table(string):
 
 
 def process_schema_item(key, value):
-    if not isinstance(value, list) and value.startswith('[') and value.endswith(']'):
-        value = list(create_table(value))
-
     if isinstance(value, list):
         return key, random.choice(value)
     elif ":" in value:
@@ -196,7 +193,7 @@ def process_schema_item(key, value):
                 exit(1)
             if generation_rule:
                 logging.warning(f"Timestamp type does not support any values. Value for '{key}' will be ignored.")
-            return key, int(time.time())
+            return key, time.time()
         elif type_hint == "str":
             if "rand(" in generation_rule:
                 print("Wrong expression near 'str'")
@@ -208,7 +205,7 @@ def process_schema_item(key, value):
             print("Wrong data type")
             exit(1)
     else:
-        print("There should be ':' in schema")
+        print("There should be ':' in schema or there should be left side of expression")
         exit(1)
 
 
