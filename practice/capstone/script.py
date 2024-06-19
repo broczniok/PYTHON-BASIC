@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import string
-import sys
 from math import ceil
 import jsonschema
 import uuid
@@ -13,6 +12,8 @@ import random
 import threading
 from configparser import ConfigParser
 import ast
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import OrderedDict
 
 
 def fill_parser(config, args):
@@ -49,7 +50,7 @@ def get_parser():
                         help="It should be string with json schema, could be loaded as path to json file with schema or schema entered to command line",
                         type=str)
     parser.add_argument('--data_lines', metavar="data_lines", help="Count of lines for each file (base=1000)", type=int)
-    parser.add_argument('--clear_path', action="store_false",
+    parser.add_argument('--clear_path', action="store_true",
                         help="Use if you want to overwrite all other files with same name in chosen directory")
     parser.add_argument('--multiprocessing', metavar="multiprocessing",
                         help="The number of processes used to create files (base=1)", type=int)
@@ -67,7 +68,9 @@ def get_parser():
         os.makedirs(arguments["pathfile"][0])
         os.chmod(arguments["pathfile"][0], 0o777)
 
-    if arguments["multiprocessing"][0] < 0:
+    if args.multiprocessing == 0:
+        arguments["multiprocessing"][0] = 0
+    elif arguments["multiprocessing"][0] < 0:
         print("Invalid multiprocessing count.")
         exit(1)
     elif arguments["multiprocessing"][0] > os.cpu_count():
@@ -76,17 +79,14 @@ def get_parser():
     if arguments["files_count"][0] < 0:
         print("Invalid files count.")
         exit(1)
-    elif arguments["files_count"][0] == 0: # Change it so it will instead be priting line = data_lines to console (do not write to file) and add multithreading to it
-        print(parse_schema(str(arguments["data_schema"][0]),2))
-        sys.exit(0)
+    elif arguments["files_count"][0] == 0:
+        arguments["multiprocessing"][0] = 1
 
-    if validate_schema(str(arguments["data_schema"][0])) == 0:
-        print("Invalid schema")
-        exit(1)
-    elif validate_schema(str(arguments["data_schema"][0])) == 1:
-        print("Schema string validated")
-    elif validate_schema(str(arguments["data_schema"][0])) == 2:
-        print("Schema from file validated")
+    if os.path.isfile(arguments["data_schema"][0]):
+        with open(arguments["data_schema"][0], "r") as r:
+            arguments["data_schema"][0] = r.read()
+
+    validate_schema(str(arguments["data_schema"][0]))
 
     if args.clear_path:
         for filename in os.listdir(arguments["pathfile"][0]):
@@ -97,46 +97,39 @@ def get_parser():
 
         print("Files deleted")
 
-    schema_validation_result = validate_schema(str(arguments["data_schema"][0]))
-    if schema_validation_result == 0:
-        print("Invalid schema")
-        exit(1)
-    else:
-        lock = threading.Lock()
-        threads = []
-        if arguments["multiprocessing"] > arguments["files_count"]:
-            arguments["multiprocessing"] = arguments["files_count"]
+    lock = threading.Lock()
+    threads = []
 
-        for i in range(arguments["multiprocessing"][0]):
-            thread = threading.Thread(target=thread_task, args=(
-                arguments["data_schema"][0],
-                arguments["pathfile"][0],
-                arguments["files_count"][0],
-                arguments["file_name"][0],
-                arguments["data_lines"][0],
-                arguments["file_prefix"][0],
-                i,
-                arguments["multiprocessing"][0],
-                lock
-            ))
-            threads.append(thread)
-            thread.start()
+    for i in range(arguments["multiprocessing"][0]):
+        thread = threading.Thread(target=thread_task, args=(
+            arguments["data_schema"][0],
+            arguments["pathfile"][0],
+            arguments["files_count"][0],
+            arguments["file_name"][0],
+            arguments["data_lines"][0],
+            arguments["file_prefix"][0],
+            i,
+            arguments["multiprocessing"][0],
+            lock
+        ))
+        threads.append(thread)
+        thread.start()
 
-        for thread in threads:
-            thread.join(1)
-            if thread.is_alive():
-                print(f"Thread {thread.name} did not complete in time and will be terminated.")
+    for thread in threads:
+        thread.join(1)
+        if thread.is_alive():
+            print(f"Thread {thread.name} did not complete in time and will be terminated.")
 
 
 
 def thread_task(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, total_threads,
                 lock):
-    files_per_thread = ceil(files_count / total_threads)
-    start_index = thread_index * files_per_thread
-    end_index = min(start_index + files_per_thread, files_count)
+        files_per_thread = ceil(files_count / total_threads)
+        start_index = thread_index * files_per_thread
+        end_index = min(start_index + files_per_thread, files_count)
 
-    process_schema(schema_str, pathfile, end_index - start_index, file_name, data_lines, file_prefix, thread_index,
-                   lock)
+        process_schema(schema_str, pathfile, end_index - start_index, file_name, data_lines, file_prefix, thread_index,
+                       lock, files_count)
 
 
 def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
@@ -164,61 +157,89 @@ def get_unique_filename(pathfile, file_name, file_prefix, extension="json"):
         exit(1)
 
 
-def process_schema(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, lock):
-    if validate_schema(schema_str) == 2:  # Schema is from file
+def process_schema(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, lock, check):
+    result_str = ""
+    for _ in range(data_lines):
+        with lock:
+            try:
+                result_str += (str(parse_schema(schema_str))) + '\n'
+            except ValueError:
+                print("Wrongly rand inserted")
+                exit(1)
+    if files_count > 0:
         with lock:
             for _ in range(0, files_count):
                 filename = get_unique_filename(pathfile, file_name, file_prefix)
                 with open(filename, 'w') as file:
-                    for _ in range(data_lines):
-                        file.write(str(parse_schema(schema_str, 2)))
-                        file.write("\n")
-    elif validate_schema(schema_str) == 1:  # Schema is from string
-        with lock:
-            for _ in range(0, files_count):
-                filename = get_unique_filename(pathfile, file_name, file_prefix)
-                with open(filename, 'w') as file:
-                    for _ in range(data_lines):
-                        try:
-                            file.write((str(parse_schema(schema_str, 1))))
-                            file.write("\n")
-                        except ValueError:
-                            print("Wrongly rand inserted")
-                            exit(1)
+                    file.write(result_str)
+    elif check == 0:
+        print(result_str)
 
 
-def parse_schema(schema_str, type):
-    if type == 2:
-        with open(schema_str, "r") as r:
-            schema = json.load(r)
+def create_table(string):
+    input_list = ast.literal_eval(string)
+    output_list = [f"{item}" for item in input_list]
+    return output_list
 
-    elif type == 1:
-        schema = json.loads(schema_str)
+
+def process_schema_item(key, value):
+    if not isinstance(value, list) and value.startswith('[') and value.endswith(']'):
+        value = list(create_table(value))
+
+    if isinstance(value, list):
+        return key, random.choice(value)
+    elif ":" in value:
+        type_hint, generation_rule = value.split(":", 1)
+        if type_hint == "timestamp":
+            if "rand(" in generation_rule:
+                print("Wrong expression near 'timestamp'")
+                exit(1)
+            if generation_rule:
+                logging.warning(f"Timestamp type does not support any values. Value for '{key}' will be ignored.")
+            return key, int(time.time())
+        elif type_hint == "str":
+            if "rand(" in generation_rule:
+                print("Wrong expression near 'str'")
+                exit(1)
+            return key, generate_str_value(generation_rule)
+        elif type_hint == "int":
+            return key, generate_int_value(generation_rule)
+        else:
+            print("Wrong data type")
+            exit(1)
     else:
+        print("There should be ':' in schema")
         exit(1)
 
-    data = {}
 
-    for key, value in schema.items():
-        if isinstance(value, list):
-            data[key] = random.choice(value)
-        elif ":" in value:
-            type_hint, generation_rule = value.split(":", 1)
-            if type_hint == "timestamp":
-                if generation_rule:
-                    logging.warning(f"Timestamp type does not support any values. Value for '{key}' will be ignored.")
-                data[key] = int(time.time())
-            elif type_hint == "str":
-                data[key] = generate_int_value(generation_rule)
-            elif type_hint == "int":
-                data[key] = generate_str_value(generation_rule)
-            else:
-                print(f"Unsupported type '{type_hint}' for key '{key}'")
+def parse_schema(schema_str):
+    try:
+        schema = json.loads(schema_str, object_pairs_hook=OrderedDict)
+    except Exception as ex:
+        print("Couldn't load schema", ex)
+        exit(1)
+
+    data = OrderedDict()
+    results = []
+
+    with ThreadPoolExecutor() as executor:
+        futures = {executor.submit(process_schema_item, key, value): key for key, value in schema.items()}
+        for future in as_completed(futures):
+            key = futures[future]
+            try:
+                result_key, result_value = future.result()
+                results.append((result_key, result_value))
+            except Exception as ex:
+                print(f"Error processing {key}: {ex}")
                 exit(1)
-        else:
-            data[key] = random.choice(ast.literal_eval(value))
 
-    return data
+    for key in schema.keys():
+        for result_key, result_value in results:
+            if key == result_key:
+                data[key] = result_value
+                break
+
+    return dict(data)
 
 
 def generate_str_value(rule):
@@ -228,6 +249,8 @@ def generate_str_value(rule):
         rule = rule.replace("'", "\"")
         values = json.loads(rule)
         return random.choice(values)
+    elif rule is None:
+        return ""
     else:
         return rule
 
@@ -247,45 +270,31 @@ def generate_int_value(rule):
         rule = rule.replace("'", "\"")
         values = json.loads(rule)
         return random.choice(values)
-    elif rule == "":
+    elif rule is None:
         return None
     else:
         try:
             return int(rule)
         except ValueError:
-            print("Cannot generate integer values")
+            print("Cannot parse to integer")
             exit(1)
 
 
 def validate_schema(schema_str):
-    if schema_str.endswith(".json") and os.path.exists(schema_str):
-        try:
-            with open(schema_str, "r") as f:
-                schema = json.load(f)
-                if isinstance(schema, dict) and 'type' in schema and isinstance(schema['type'],list):
-                    schema['type'] = ["string", "array"]
-                    schema['items'] = {"type": "string"}
-                    schema['minItems'] = 1
-                    schema['uniqueItems'] = True
-                jsonschema.Draft7Validator.check_schema(schema)
-            return 2
-        except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
-            print(f"Invalid schema in file: {e}")
-            exit(1)
-    else:
-        try:
-            schema = json.loads(schema_str)
+    try:
+        schema = json.loads(schema_str)
 
-            schema['type'] = ["string", "array"]
-            schema['items'] = {"type": "string"}
-            schema['minItems'] = 1
-            schema['uniqueItems'] = True
+        schema['type'] = ["string", "array"]
+        schema['items'] = {"type": "string"}
+        schema['minItems'] = 1
+        schema['uniqueItems'] = True
 
-            jsonschema.Draft7Validator.check_schema(schema)
-            return 1
-        except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
-            print(f"Invalid schema string: {e}")
-            exit(1)
+        jsonschema.Draft7Validator.check_schema(schema)
+        print("Schema validated")
+        return 1
+    except (json.JSONDecodeError, jsonschema.exceptions.SchemaError) as e:
+        print(f"Invalid schema string: {e}")
+        exit(1)
 
 
 if __name__ == "__main__":
