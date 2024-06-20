@@ -16,6 +16,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import OrderedDict
 
 
+warning_printed = False
+warning_lock = threading.Lock()
+
+
 def fill_parser(config, args):
     result = {
         "pathfile": [args.path_to_save_files],
@@ -116,10 +120,9 @@ def get_parser():
         thread.start()
 
     for thread in threads:
-        thread.join(1)
+        thread.join(5)
         if thread.is_alive():
             print(f"Thread {thread.name} did not complete in time and will be terminated.")
-
 
 
 def thread_task(schema_str, pathfile, files_count, file_name, data_lines, file_prefix, thread_index, total_threads,
@@ -183,6 +186,8 @@ def create_table(string):
 
 
 def process_schema_item(key, value):
+    global warning_printed
+
     if isinstance(value, list):
         return key, random.choice(value)
     elif ":" in value:
@@ -192,7 +197,10 @@ def process_schema_item(key, value):
                 print("Wrong expression near 'timestamp'")
                 exit(1)
             if generation_rule:
-                logging.warning(f"Timestamp type does not support any values. Value for '{key}' will be ignored.")
+                with warning_lock:
+                    if not warning_printed:
+                        logging.warning(f"Timestamp type does not support any values. Value for '{key}' will be ignored.")
+                        warning_printed = True
             return key, time.time()
         elif type_hint == "str":
             if "rand(" in generation_rule:
@@ -267,7 +275,7 @@ def generate_int_value(rule):
         rule = rule.replace("'", "\"")
         values = json.loads(rule)
         return random.choice(values)
-    elif rule is None:
+    elif rule == "":
         return None
     else:
         try:
